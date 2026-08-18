@@ -1,0 +1,510 @@
+/* ==========================================================================
+   monday.com Component Stylesheet
+   Collapsible Groups, Status Blocks, Timeline Pills, Kanban & Automations
+   ========================================================================== */
+
+/* monday.com Group Container */
+.monday-group {
+  margin-bottom: 32px;
+  background: transparent;
+}
+
+/* Group Header */
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  margin-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.group-collapse-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-header.collapsed .group-collapse-btn {
+  transform: rotate(-90deg);
+}
+
+.group-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-item-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* monday.com Table Structure */
+.monday-table-wrapper {
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-light);
+  overflow-x: auto;
+}
+
+.monday-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+/* Table Header */
+.monday-table th {
+  background: #ffffff;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  border-bottom: 1px solid var(--border-medium);
+  border-right: 1px solid var(--border-light);
+  position: relative;
+  white-space: nowrap;
+}
+
+.monday-table th:first-child {
+  text-align: left;
+  padding-left: 16px;
+}
+
+.monday-table th:last-child {
+  border-right: none;
+}
+
+/* Table Body Rows */
+.monday-table tr {
+  transition: background-color var(--transition-fast);
+  height: 44px;
+}
+
+.monday-table tbody tr:hover {
+  background-color: #f0f3f8;
+}
+
+.monday-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  text-align: center;
+  vertical-align: middle;
+  position: relative;
+}
+
+.monday-table td:last-child {
+  border-right: none;
+}
+
+/* Left Group Color Stripe */
+.td-item-name {
+  text-align: left !important;
+  padding-left: 12px !important;
+  position: relative;
+}
+
+.group-color-stripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+}
+
+.item-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.item-name-cell:hover {
+  color: var(--monday-blue);
+}
+
+.item-number-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--monday-blue);
+  background: var(--monday-blue-light);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.item-title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* monday.com Signature Status Color Block */
+.status-cell-block {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: filter var(--transition-fast), transform var(--transition-fast);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.status-cell-block:hover {
+  filter: brightness(1.1);
+}
+
+.status-cell-block.status-daily { background-color: var(--status-critical); }
+.status-cell-block.status-5d { background-color: var(--status-critical); }
+.status-cell-block.status-15d { background-color: var(--status-urgent); }
+.status-cell-block.status-30d { background-color: var(--status-working); color: #323338; }
+.status-cell-block.status-done { background-color: var(--status-done); }
+.status-cell-block.status-safe { background-color: var(--status-info); }
+.status-cell-block.status-review { background-color: var(--status-review); }
+
+/* Timeline / Date Progress Pill */
+.timeline-pill {
+  width: 100%;
+  height: 28px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-pill.timeline-critical { background: #333333; }
+.timeline-pill.timeline-urgent { background: #555555; }
+.timeline-pill.timeline-safe { background: #676879; }
+
+.timeline-pill-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 0.9;
+  border-radius: var(--radius-full);
+  z-index: 1;
+}
+
+.timeline-pill-text {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-mono);
+}
+
+.timeline-countdown-badge {
+  position: relative;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+}
+
+/* Person / Attorney Column Avatar */
+.person-cell-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.person-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 1px solid var(--border-medium);
+}
+
+/* Stage Pill */
+.stage-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  background: #f0f3f8;
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+
+/* Government Receipt Document Chip */
+.receipt-chip-monday {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: #f0f4ff;
+  color: var(--monday-blue);
+  border: 1px solid #d0e2ff;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.receipt-chip-monday:hover {
+  background: var(--monday-blue-light);
+  border-color: var(--monday-blue);
+}
+
+/* Group Summary Footer Row */
+.monday-table-footer {
+  background: #fafbfc;
+  height: 38px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.monday-table-footer td {
+  border-top: 1px solid var(--border-medium);
+  border-bottom: none;
+}
+
+.progress-bar-container {
+  width: 90%;
+  height: 8px;
+  background: #e6e9ef;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: 0 auto;
+  display: flex;
+}
+
+.progress-bar-done {
+  height: 100%;
+  background: var(--status-done);
+}
+
+.progress-bar-critical {
+  height: 100%;
+  background: var(--status-critical);
+}
+
+.progress-bar-urgent {
+  height: 100%;
+  background: var(--status-urgent);
+}
+
+/* "+ Add Item" Row */
+.add-item-row {
+  height: 38px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.add-item-row:hover {
+  background: var(--bg-surface-hover);
+}
+
+.add-item-cell {
+  padding-left: 18px !important;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-item-cell:hover {
+  color: var(--monday-blue);
+}
+
+/* ==========================================================================
+   monday.com Kanban View
+   ========================================================================== */
+.monday-kanban-board {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.kanban-column {
+  flex: 0 0 310px;
+  background: #f5f6f8;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 240px);
+}
+
+.kanban-column-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 4px solid var(--monday-blue);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.kanban-cards-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.kanban-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  box-shadow: var(--shadow-subtle);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* ==========================================================================
+   monday.com Automations Center Styles
+   ========================================================================== */
+.automations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.automation-recipe-card {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.automation-sentence {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.automation-param {
+  color: var(--monday-blue);
+  font-weight: 700;
+  border-bottom: 1.5px dashed var(--monday-blue);
+  padding: 0 2px;
+}
+
+.automation-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-light);
+  padding-top: 14px;
+}
+
+.toggle-switch {
+  width: 42px;
+  height: 22px;
+  background: var(--status-done);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* OCR Receipt Upload Dropzone */
+.ocr-dropzone-monday {
+  border: 2px dashed #0073ea;
+  border-radius: var(--radius-lg);
+  padding: 30px 20px;
+  text-align: center;
+  background: #f0f7ff;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocr-dropzone-monday:hover {
+  background: #e1f0ff;
+  border-color: #0060b9;
+}
+
+.sample-chip-monday {
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.sample-chip-monday:hover {
+  border-color: var(--monday-blue);
+  color: var(--monday-blue);
+  transform: translateY(-1px);
+}
