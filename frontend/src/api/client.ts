@@ -2,10 +2,21 @@ import axios from 'axios';
 
 /**
  * In dev, Vite proxies /api to localhost:4000. In production the API lives on
- * another origin (Render), so VITE_API_URL carries its base, e.g.
- * https://lexpatent-api.onrender.com/api/v1
+ * another origin, so VITE_API_URL carries its base.
+ *
+ * The version prefix is appended when missing: setting VITE_API_URL to the
+ * bare host is the obvious mistake to make, and it produces 404s on every
+ * call rather than an obvious configuration error.
  */
-const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
+function resolveBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_URL;
+  if (!configured) return '/api/v1';
+
+  const trimmed = configured.replace(/\/+$/, '');
+  return /\/api\/v\d+$/.test(trimmed) ? trimmed : `${trimmed}/api/v1`;
+}
+
+const baseURL = resolveBaseUrl();
 
 const api = axios.create({
   baseURL,
