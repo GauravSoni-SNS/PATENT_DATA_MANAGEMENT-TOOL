@@ -19,7 +19,8 @@
     "postinstall": "prisma generate",
     "deploy:db": "prisma db push --skip-generate",
     "render:build": "npm run build",
-    "start:prod": "prisma db push --skip-generate && node dist/index.js"
+    "start:prod": "prisma db push --skip-generate && node dist/index.js",
+    "db:seed:remote": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

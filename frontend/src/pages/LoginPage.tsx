@@ -3,6 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 
+/**
+ * A failed login is not always bad credentials: a misconfigured API URL, a
+ * CORS rejection or a sleeping backend all land here too. Reporting every
+ * one of them as "invalid password" sends people hunting the wrong problem.
+ */
+function describeLoginFailure(err: unknown): string {
+  const e = err as { response?: { status?: number } };
+  const status = e?.response?.status;
+
+  if (status === 401 || status === 422) return "Invalid email or password.";
+  if (status === 404) return "API not found at that address. Check VITE_API_URL ends with /api/v1.";
+  if (status && status >= 500) return "The server failed. It may be starting up, or unable to reach its database.";
+  if (!e?.response) return "Cannot reach the API. It may be asleep (the first request can take ~50s), or this origin is not in the API's allowed list.";
+  return "Login failed (HTTP " + status + ").";
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('s.jenkins@lexpatent-ip.com');
   const [password, setPassword] = useState('password123');
@@ -18,8 +34,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate('/board');
-    } catch {
-      setError('Invalid email or password');
+    } catch (err) {
+      setError(describeLoginFailure(err));
     } finally {
       setLoading(false);
     }
