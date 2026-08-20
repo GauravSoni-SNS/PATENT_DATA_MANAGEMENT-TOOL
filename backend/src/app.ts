@@ -16,7 +16,18 @@ import clientsRoutes from './routes/clients';
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: env.frontendUrl, credentials: true }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // no Origin header: curl, health checks, same-origin requests
+        if (!origin || env.frontendUrls.includes(origin)) return callback(null, true);
+        // Deny by omitting the header rather than throwing, so a stray origin
+        // is a browser-side CORS block and not a 500 in the API logs.
+        return callback(null, false);
+      },
+      credentials: true,
+    })
+  );
   app.use(express.json());
   app.use(cookieParser());
   app.use('/uploads', express.static(path.resolve(env.uploadDir)));

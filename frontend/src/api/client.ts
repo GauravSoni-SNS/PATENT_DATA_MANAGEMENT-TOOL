@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+/**
+ * In dev, Vite proxies /api to localhost:4000. In production the API lives on
+ * another origin (Render), so VITE_API_URL carries its base, e.g.
+ * https://lexpatent-api.onrender.com/api/v1
+ */
+const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL,
   withCredentials: true,
 });
 
@@ -17,7 +24,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !error.config._retry) {
       error.config._retry = true;
       try {
-        const { data } = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
         localStorage.setItem('accessToken', data.data.accessToken);
         error.config.headers.Authorization = `Bearer ${data.data.accessToken}`;
         return api(error.config);
