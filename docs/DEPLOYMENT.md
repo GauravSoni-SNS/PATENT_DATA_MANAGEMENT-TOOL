@@ -32,7 +32,7 @@ It will ask for the one value marked `sync: false`:
 
 ```
 rootDir:       backend
-buildCommand:  npm ci && npm run render:build
+buildCommand:  npm ci --include=dev && npm run render:build
 startCommand:  npm run start:prod
 healthCheck:   /api/v1/health
 ```
@@ -151,7 +151,7 @@ that opens a connection therefore fails during the build.
 Fixed by moving the schema push out of `buildCommand` into `startCommand`:
 
 ```yaml
-buildCommand: npm ci && npm run render:build   # tsc only
+buildCommand: npm ci --include=dev && npm run render:build   # tsc only
 startCommand: npm run start:prod               # prisma db push, then node dist/index.js
 ```
 
@@ -160,3 +160,23 @@ commands on the service's **Settings** page to match, and confirm `DATABASE_URL`
 is listed under **Environment** (it appears automatically only when the service
 and database were created together by the blueprint; otherwise add it yourself
 using the database's **Internal Database URL**).
+
+### Build fails: `Could not find a declaration file for module 'express'` / `Cannot find name 'fs'`
+
+```
+error TS7016: Could not find a declaration file for module 'express'.
+error TS2591: Cannot find name 'fs'. Do you need to install type definitions for node?
+```
+
+`NODE_ENV=production` is set on the service, and npm honours it by omitting
+`devDependencies` — which is where `typescript` and every `@types/*` package
+lives. The compiler then runs without any type declarations.
+
+Fixed by installing dev dependencies explicitly:
+
+```yaml
+buildCommand: npm ci --include=dev && npm run render:build
+```
+
+Do not "fix" this by moving `@types/*` into `dependencies`; the flag is the
+correct lever, and it keeps the Prisma CLI available for the start command too.
