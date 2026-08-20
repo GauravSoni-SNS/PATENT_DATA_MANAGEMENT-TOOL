@@ -214,3 +214,38 @@ postgresql://USER:PASSWORD@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require
 If you later move the API to serverless, switch `url` to the pooled host and add
 `directUrl` (pointing at the direct host) to the datasource block in
 `schema.prisma` so migrations keep working.
+
+### Live login says "Invalid email or password"
+
+The database has tables but no rows. `prisma db push` creates the schema; it
+does not seed. Until the seed runs, no user exists and every login is a
+genuine 401.
+
+**Render's Shell tab requires a paid instance type**, so on the free plan seed
+from your own machine against the same database:
+
+```bash
+cd backend
+DATABASE_URL="<your Neon direct URL>" npm run db:seed:remote
+```
+
+PowerShell:
+
+```powershell
+cd backend
+$env:DATABASE_URL="<your Neon direct URL>"; npm run db:seed:remote
+```
+
+**The seed is destructive.** It runs `deleteMany()` across every table before
+inserting, so never point it at a database that already holds real matters.
+
+Confirm it worked without a browser:
+
+```bash
+curl -X POST https://<your-api>.onrender.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"s.jenkins@lexpatent-ip.com","password":"password123"}'
+```
+
+`accessToken` in the response means the database is seeded and the API is
+healthy — any remaining browser-side failure is then CORS or `VITE_API_URL`.
