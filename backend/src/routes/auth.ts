@@ -7,6 +7,17 @@ import { env } from '../config/env';
 
 const router = Router();
 
+/**
+ * The deployed frontend (Vercel) and API (Render) are different sites, so the
+ * refresh cookie needs SameSite=None; Secure or the browser silently drops it.
+ * Locally both are http://localhost, where None+Secure would be rejected.
+ */
+const refreshCookieOptions = {
+  httpOnly: true,
+  secure: env.isProduction,
+  sameSite: env.isProduction ? ("none" as const) : ("lax" as const),
+};
+
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -109,7 +120,7 @@ router.post('/logout', authenticate, async (req, res, next) => {
       const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
       await prisma.refreshToken.deleteMany({ where: { tokenHash } });
     }
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', refreshCookieOptions);
     res.json({ success: true, data: { message: 'Logged out' } });
   } catch (e) {
     next(e);

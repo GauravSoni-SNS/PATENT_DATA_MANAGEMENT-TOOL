@@ -15,7 +15,10 @@
     "db:start": "node scripts/start-db.mjs",
     "test": "vitest run",
     "test:api": "tsx scripts/test-api.ts",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "prisma generate",
+    "deploy:db": "prisma db push --skip-generate",
+    "render:build": "npm run deploy:db && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -45,5 +48,8 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=20 <23"
   }
 }

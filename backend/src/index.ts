@@ -14,9 +14,10 @@ async function main() {
     process.exit(1);
   }
 
-  app.listen(env.port, () => {
-    console.log(`LexPatent API running at http://localhost:${env.port}`);
-    console.log(`Health: http://localhost:${env.port}/api/v1/health`);
+  // 0.0.0.0 so container platforms (Render) can reach the port they assign.
+  app.listen(env.port, "0.0.0.0", () => {
+    console.log(`LexPatent API listening on port ${env.port}`);
+    console.log("Health: /api/v1/health");
   });
 }
 
