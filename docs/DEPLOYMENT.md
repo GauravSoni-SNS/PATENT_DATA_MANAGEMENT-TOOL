@@ -4,7 +4,8 @@ The app is two deployables:
 
 | Piece | Host | Why |
 |---|---|---|
-| `backend/` Express API + PostgreSQL | **Render** | needs a long-lived process and a real database |
+| `backend/` Express API | **Render** | needs a long-lived process |
+| PostgreSQL | **Neon** | serverless Postgres, no 30-day expiry |
 | `frontend/` React SPA | **Vercel** | static build, served from the edge |
 
 Deploy Render first — the frontend needs the API's URL before it can be built.
@@ -180,3 +181,37 @@ buildCommand: npm ci --include=dev && npm run render:build
 
 Do not "fix" this by moving `@types/*` into `dependencies`; the flag is the
 correct lever, and it keeps the Prisma CLI available for the start command too.
+
+### Using Neon instead of Render Postgres
+
+`render.yaml` no longer declares a database; `DATABASE_URL` is `sync: false`
+and set by hand to a Neon connection string.
+
+Use Neon's **direct** connection, not the pooled one. Neon hands out two hosts:
+
+```
+ep-xxxx-pooler.region.aws.neon.tech    <- pooled (PgBouncer)
+ep-xxxx.region.aws.neon.tech           <- direct
+```
+
+Take the direct host — drop `-pooler` from the hostname. Two reasons:
+
+1. `prisma db push` issues DDL, which is unreliable through a transaction
+   pooler.
+2. This is one long-lived Node process with Prisma's own connection pool, so
+   PgBouncer buys nothing. Pooling matters for serverless functions, which this
+   is not.
+
+Trim the query string to `?sslmode=require`. Neon's console appends
+`&channel_binding=require`, which is a libpq option that Prisma's driver does
+not accept.
+
+Final shape:
+
+```
+postgresql://USER:PASSWORD@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require
+```
+
+If you later move the API to serverless, switch `url` to the pooled host and add
+`directUrl` (pointing at the direct host) to the datasource block in
+`schema.prisma` so migrations keep working.
