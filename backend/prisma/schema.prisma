@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PARTNER
+  ATTORNEY
+  PARALEGAL
+  READ_ONLY
+}
+
+enum MatterStatus {
+  ACTIVE
+  GRANTED
+  ABANDONED
+  ARCHIVED
+}
+
+enum ProsecutionStage {
+  INTAKE
+  PROVISIONAL
+  COMPLETE
+  PUBLICATION_RFE
+  EXAMINATION_FER
+  HEARING
+  ALLOWANCE_GRANT
+  ANNUITY_MAINTENANCE
+}
+
+enum JurisdictionCode {
+  IN
+  US
+  EP
+  WO
+}
+
+enum DeadlineStatus {
+  PENDING
+  WAITING_VERIFICATION
+  CLEARED
+  OVERDUE
+  EXTENDED
+}
+
+enum UrgencyTier {
+  SAFE_UPCOMING
+  T_30_ADVISORY
+  T_15_URGENT
+  T_5_CRITICAL
+  DAILY_CRITICAL
+  OVERDUE
+}
+
+enum ReceiptType {
+  PROVISIONAL_FILING_CBR
+  COMPLETE_FILING_CBR
+  USPTO_EFS_ACK
+  EPO_ONLINE_FILING_ACK
+  PCT_RECEIPT
+  FER_RESPONSE_CBR
+  HEARING_SUBMISSION_CBR
+  ISSUE_FEE_RECEIPT
+  OFFICIAL_GRANT_CERTIFICATE
+  ANNUITY_RECEIPT
+  FORM_18_RECEIPT
+  FORM_27_RECEIPT
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationTier {
+  T_30_ADVISORY
+  T_15_URGENT
+  T_5_CRITICAL
+  DAILY_COUNTDOWN
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model Firm {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("Asia/Kolkata")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  clients       Client[]
+  matters       Matter[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@map("firms")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  firmId         String   @map("firm_id")
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  role           UserRole
+  specialization String?
+  avatarUrl      String?  @map("avatar_url")
+  isActive       Boolean  @default(true) @map("is_active")
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  firm                 Firm          @relation(fields: [firmId], references: [id])
+  leadMatters          Matter[]      @relation("LeadAttorney")
+  supervisingMatters   Matter[]      @relation("SupervisingPartner")
+  uploadedReceipts     Receipt[]     @relation("UploadedBy")
+  verifications        Verification[] @relation("VerifiedBy")
+  clearedDeadlines     Deadline[]    @relation("ClearedBy")
+  auditLogs            AuditLog[]
+  refreshTokens        RefreshToken[]
+
+  @@index([firmId])
+  @@map("users")
+}
+
+model Client {
+  id            String   @id @default(uuid())
+  firmId        String   @map("firm_id")
+  name          String
+  code          String?
+  contactPerson String?  @map("contact_person")
+  contactEmail  String?  @map("contact_email")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  firm    Firm     @relation(fields: [firmId], references: [id])
+  matters Matter[]
+
+  @@index([firmId])
+  @@map("clients")
+}
+
+model Matter {
+  id                   String           @id @default(uuid())
+  firmId               String           @map("firm_id")
+  clientId             String?          @map("client_id")
+  matterNumber         String           @map("matter_number")
+  title                String
+  jurisdiction         JurisdictionCode
+  applicationType      String?          @map("application_type")
+  officialAppNumber    String?          @map("official_app_number")
+  priorityDate         DateTime?        @map("priority_date") @db.Date
+  filingDate           DateTime?        @map("filing_date") @db.Date
+  currentStage         ProsecutionStage @map("current_stage")
+  status               MatterStatus     @default(ACTIVE)
+  leadAttorneyId       String?          @map("lead_attorney_id")
+  supervisingPartnerId String?          @map("supervising_partner_id")
+  abstract             String?
+  parentMatterId       String?          @map("parent_matter_id")
+  metadata             Json             @default("{}")
+  deletedAt            DateTime?        @map("deleted_at")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  firm               Firm     @relation(fields: [firmId], references: [id])
+  client             Client?  @relation(fields: [clientId], references: [id])
+  leadAttorney       User?    @relation("LeadAttorney", fields: [leadAttorneyId], references: [id])
+  supervisingPartner User?    @relation("SupervisingPartner", fields: [supervisingPartnerId], references: [id])
+  deadlines          Deadline[]
+  receipts           Receipt[]
+  notifications      Notification[]
+
+  @@unique([firmId, matterNumber])
+  @@index([firmId, status])
+  @@index([leadAttorneyId])
+  @@map("matters")
+}
+
+model Deadline {
+  id                 String         @id @default(uuid())
+  matterId           String         @map("matter_id")
+  ruleId             String         @map("rule_id")
+  title              String
+  description        String?
+  statutoryDueDate   DateTime       @map("statutory_due_date") @db.Date
+  extendedDueDate    DateTime?      @map("extended_due_date") @db.Date
+  isStatutoryBar     Boolean        @default(false) @map("is_statutory_bar")
+  isExtendable       Boolean        @default(false) @map("is_extendable")
+  maxExtensionMonths Int?           @map("max_extension_months")
+  extensionProcedure String?        @map("extension_procedure")
+  statutorySection   String?        @map("statutory_section")
+  requiredReceiptType ReceiptType?  @map("required_receipt_type")
+  status             DeadlineStatus @default(PENDING)
+  urgencyTier        UrgencyTier?   @map("urgency_tier")
+  daysRemaining      Int?           @map("days_remaining")
+  clearedAt          DateTime?      @map("cleared_at")
+  clearedById        String?        @map("cleared_by_id")
+  notes              String?
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  matter        Matter         @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  clearedBy     User?          @relation("ClearedBy", fields: [clearedById], references: [id])
+  receipts      Receipt[]
+  verifications Verification[]
+  notifications Notification[]
+
+  @@index([matterId])
+  @@index([statutoryDueDate, status])
+  @@map("deadlines")
+}
+
+model Receipt {
+  id              String      @id @default(uuid())
+  matterId        String      @map("matter_id")
+  deadlineId      String?     @map("deadline_id")
+  receiptType     ReceiptType @map("receipt_type")
+  fileName        String      @map("file_name")
+  filePath        String      @map("file_path")
+  fileSize        Int?        @map("file_size")
+  mimeType        String?     @map("mime_type")
+  cbrNumber       String?     @map("cbr_number")
+  officialFees    Decimal?    @map("official_fees") @db.Decimal(12, 2)
+  currency        String?
+  transactionDate DateTime?   @map("transaction_date")
+  parsedData      Json        @default("{}") @map("parsed_data")
+  uploadedById    String      @map("uploaded_by_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  matter       Matter         @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  deadline     Deadline?      @relation(fields: [deadlineId], references: [id])
+  uploadedBy   User           @relation("UploadedBy", fields: [uploadedById], references: [id])
+  verifications Verification[]
+
+  @@index([matterId])
+  @@index([deadlineId])
+  @@map("receipts")
+}
+
+model Verification {
+  id              String             @id @default(uuid())
+  receiptId       String             @map("receipt_id")
+  deadlineId      String             @map("deadline_id")
+  status          VerificationStatus @default(PENDING)
+  verifiedById    String?            @map("verified_by_id")
+  verifiedAt      DateTime?          @map("verified_at")
+  rejectionReason String?            @map("rejection_reason")
+  notes           String?
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  receipt    Receipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  deadline   Deadline @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
+  verifiedBy User?    @relation("VerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([deadlineId])
+  @@index([status])
+  @@map("verifications")
+}
+
+model Notification {
+  id             String             @id @default(uuid())
+  firmId         String             @map("firm_id")
+  matterId       String?            @map("matter_id")
+  deadlineId     String?            @map("deadline_id")
+  tier           NotificationTier
+  tierLabel      String             @map("tier_label")
+  subject        String
+  bodyHtml       String             @map("body_html")
+  recipients     Json
+  daysRemaining  Int?               @map("days_remaining")
+  status         NotificationStatus @default(PENDING)
+  sentAt         DateTime?          @map("sent_at")
+  isEmergency    Boolean            @default(false) @map("is_emergency")
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  firm     Firm      @relation(fields: [firmId], references: [id])
+  matter   Matter?   @relation(fields: [matterId], references: [id])
+  deadline Deadline? @relation(fields: [deadlineId], references: [id])
+
+  @@index([firmId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  firmId      String   @map("firm_id")
+  userId      String?  @map("user_id")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  action      String
+  beforeState Json?    @map("before_state")
+  afterState  Json?    @map("after_state")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  firm Firm  @relation(fields: [firmId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([firmId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}

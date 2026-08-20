@@ -1,0 +1,1270 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  /* No --default: a default theme is emitted at :root and outranks nothing,
+     so daisyUI palette vars would stay pinned to it while [data-theme]
+     switches only our own tokens. index.html ships data-theme="sage". */
+  themes: sage, terracotta, midnight;
+}
+
+/* ==========================================================================
+   Three themes share one token contract (--tc-*). Components never hardcode
+   a colour; switching data-theme on <html> reskins the whole app.
+   ========================================================================== */
+
+@plugin "daisyui/theme" {
+  name: "sage";
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #DBE9D2;
+  --color-base-200: #CFE2C4;
+  --color-base-300: #C0D8B3;
+  --color-base-content: #1F2A1C;
+  --color-primary: #3F6B33;
+  --color-primary-content: #DBE9D2;
+  --color-secondary: #24401E;
+  --color-secondary-content: #DBE9D2;
+  --color-accent: #BADCA8;
+  --color-accent-content: #24401E;
+  --color-neutral: #24401E;
+  --color-neutral-content: #DBE9D2;
+  --color-info: #5A7150;
+  --color-info-content: #DBE9D2;
+  --color-success: #16A34A;
+  --color-success-content: #FFFFFF;
+  --color-warning: #D97706;
+  --color-warning-content: #FFFFFF;
+  --color-error: #DC2626;
+  --color-error-content: #FFFFFF;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "terracotta";
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #F3E9D8;
+  --color-base-200: #EFE2CD;
+  --color-base-300: #E6D6BD;
+  --color-base-content: #111827;
+  --color-primary: #C56A3C;
+  --color-primary-content: #FFF6EC;
+  --color-secondary: #3A241C;
+  --color-secondary-content: #F3E9D8;
+  --color-accent: #E8C9A8;
+  --color-accent-content: #3A241C;
+  --color-neutral: #3A241C;
+  --color-neutral-content: #F3E9D8;
+  --color-info: #6F5A4E;
+  --color-info-content: #F3E9D8;
+  --color-success: #16A34A;
+  --color-success-content: #FFFFFF;
+  --color-warning: #D97706;
+  --color-warning-content: #FFFFFF;
+  --color-error: #DC2626;
+  --color-error-content: #FFFFFF;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "midnight";
+  /* Explicit choice only: a prefersdark theme is emitted inside a
+     prefers-color-scheme media block that outranks [data-theme] and would
+     leak this palette into the light themes on dark-mode machines. */
+  prefersdark: false;
+  color-scheme: dark;
+
+  --color-base-100: #141A17;
+  --color-base-200: #1B231E;
+  --color-base-300: #232D26;
+  --color-base-content: #E4EDE5;
+  --color-primary: #7CC262;
+  --color-primary-content: #10190F;
+  --color-secondary: #0F1512;
+  --color-secondary-content: #E4EDE5;
+  --color-accent: #2C3B2E;
+  --color-accent-content: #C9E3BC;
+  --color-neutral: #0F1512;
+  --color-neutral-content: #E4EDE5;
+  --color-info: #9FB39B;
+  --color-info-content: #10190F;
+  --color-success: #22C55E;
+  --color-success-content: #08120B;
+  --color-warning: #F59E0B;
+  --color-warning-content: #1A1204;
+  --color-error: #F87171;
+  --color-error-content: #1C0808;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Component token contract. Every .tc-* / .u-* rule reads these.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="sage"] {
+  --tc-paper: #DBE9D2;
+  --tc-paper-soft: #E9F1E3;
+  --tc-paper-200: #CFE2C4;
+  --tc-paper-300: #C0D8B3;
+  --tc-paper-blur: rgba(233, 241, 227, 0.92);
+  --tc-surface: #FFFFFF;
+  --tc-surface-hover: #F2F7EE;
+  --tc-surface-mute: #EFF5EA;
+  --tc-col-bg: rgba(255, 255, 255, 0.5);
+  --tc-accent: #3F6B33;
+  --tc-accent-deep: #2F5426;
+  --tc-accent-light: #BADCA8;
+  --tc-accent-soft: rgba(186, 220, 168, 0.42);
+  --tc-accent-hover-border: rgba(63, 107, 51, 0.45);
+  --tc-on-accent: #DBE9D2;
+  --tc-ink: #1F2A1C;
+  --tc-ink-deep: #24401E;
+  --tc-ink-muted: #5A7150;
+  --tc-rule: rgba(36, 64, 30, 0.22);
+  --tc-rule-soft: rgba(36, 64, 30, 0.1);
+  --tc-rule-strong: rgba(36, 64, 30, 0.25);
+  --tc-shadow-xs: rgba(36, 64, 30, 0.05);
+  --tc-shadow-md: rgba(36, 64, 30, 0.12);
+  --tc-shadow-lg: rgba(36, 64, 30, 0.16);
+}
+
+[data-theme="terracotta"] {
+  --tc-paper: #F3E9D8;
+  --tc-paper-soft: #F8F0E4;
+  --tc-paper-200: #EFE2CD;
+  --tc-paper-300: #E6D6BD;
+  --tc-paper-blur: rgba(248, 240, 228, 0.92);
+  --tc-surface: #FFFFFF;
+  --tc-surface-hover: #FDF8F1;
+  --tc-surface-mute: #FBF6EE;
+  --tc-col-bg: rgba(255, 255, 255, 0.5);
+  --tc-accent: #C56A3C;
+  --tc-accent-deep: #A85528;
+  --tc-accent-light: #E8C9A8;
+  --tc-accent-soft: rgba(197, 106, 60, 0.14);
+  --tc-accent-hover-border: rgba(197, 106, 60, 0.45);
+  --tc-on-accent: #FFF6EC;
+  --tc-ink: #111827;
+  --tc-ink-deep: #3A241C;
+  --tc-ink-muted: #6F5A4E;
+  --tc-rule: rgba(58, 36, 28, 0.22);
+  --tc-rule-soft: rgba(58, 36, 28, 0.1);
+  --tc-rule-strong: rgba(58, 36, 28, 0.25);
+  --tc-shadow-xs: rgba(58, 36, 28, 0.05);
+  --tc-shadow-md: rgba(58, 36, 28, 0.12);
+  --tc-shadow-lg: rgba(58, 36, 28, 0.16);
+}
+
+[data-theme="midnight"] {
+  --tc-paper: #141A17;
+  --tc-paper-soft: #1B231E;
+  --tc-paper-200: #232D26;
+  --tc-paper-300: #2B372E;
+  --tc-paper-blur: rgba(27, 35, 30, 0.92);
+  --tc-surface: #1B231E;
+  --tc-surface-hover: #232D26;
+  --tc-surface-mute: #171E1A;
+  --tc-col-bg: rgba(255, 255, 255, 0.03);
+  --tc-accent: #7CC262;
+  --tc-accent-deep: #9AD683;
+  --tc-accent-light: #2C3B2E;
+  --tc-accent-soft: rgba(124, 194, 98, 0.16);
+  --tc-accent-hover-border: rgba(124, 194, 98, 0.5);
+  --tc-on-accent: #10190F;
+  --tc-ink: #E4EDE5;
+  --tc-ink-deep: #F2F7F1;
+  --tc-ink-muted: #9FB39B;
+  --tc-rule: rgba(228, 237, 229, 0.16);
+  --tc-rule-soft: rgba(228, 237, 229, 0.08);
+  --tc-rule-strong: rgba(228, 237, 229, 0.24);
+  --tc-shadow-xs: rgba(0, 0, 0, 0.4);
+  --tc-shadow-md: rgba(0, 0, 0, 0.5);
+  --tc-shadow-lg: rgba(0, 0, 0, 0.6);
+}
+
+/* Semantic tokens - exposed as Tailwind utilities (bg-paper, text-sage, border-rule) */
+@theme {
+  --color-paper: var(--tc-paper);
+  --color-paper-soft: var(--tc-paper-soft);
+  --color-sage: var(--tc-accent);
+  --color-sage-deep: var(--tc-accent-deep);
+  --color-sage-light: var(--tc-accent-light);
+  --color-sage-soft: var(--tc-accent-soft);
+  --color-ink: var(--tc-ink);
+  --color-ink-deep: var(--tc-ink-deep);
+  --color-ink-muted: var(--tc-ink-muted);
+  --color-rule: var(--tc-rule);
+  --color-surface-card: var(--tc-surface);
+
+  --font-display: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-display);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--tc-paper);
+    color: var(--tc-ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  th {
+    color: var(--tc-ink-muted);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--tc-ink-deep);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Badges â€” height:auto so multi-word labels wrap inside the pill instead of
+   spilling out of daisyUI's fixed-height badge box.
+   -------------------------------------------------------------------------- */
+.badge {
+  height: auto;
+  min-height: 1.5rem;
+  padding-block: 0.2rem;
+  white-space: normal;
+  line-height: 1.25;
+  text-align: center;
+}
+
+/* Editorial surfaces ------------------------------------------------------ */
+.tc-card {
+  background-color: var(--tc-surface);
+  color: var(--tc-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px var(--tc-shadow-xs);
+}
+
+.tc-surface {
+  background-color: var(--tc-surface);
+  color: var(--tc-ink);
+}
+
+.tc-panel {
+  background-color: var(--tc-paper-soft);
+  color: var(--tc-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: 12px;
+}
+
+.tc-rule {
+  border-color: var(--color-rule);
+}
+
+/* Controls ---------------------------------------------------------------- */
+.tc-btn {
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tc-btn:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 3px;
+}
+
+.tc-btn-primary {
+  background-color: var(--tc-accent);
+  color: var(--tc-on-accent);
+  border: 1px solid var(--tc-accent);
+}
+
+.tc-btn-primary:hover:not(:disabled) {
+  background-color: var(--tc-accent-deep);
+  border-color: var(--tc-accent-deep);
+  color: var(--tc-on-accent);
+}
+
+.tc-btn-quiet {
+  background-color: var(--tc-surface);
+  color: var(--tc-ink-deep);
+  border: 1px solid var(--color-rule);
+}
+
+.tc-btn-quiet:hover:not(:disabled) {
+  background-color: var(--color-sage-soft);
+  border-color: var(--tc-accent);
+  color: var(--tc-accent-deep);
+}
+
+.tc-input {
+  background-color: var(--tc-surface);
+  color: var(--tc-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: 10px;
+  min-height: 44px;
+}
+
+.tc-input:focus-visible,
+.tc-input:focus {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 3px;
+  border-color: var(--tc-accent);
+}
+
+/* Status badges â€” semantic colours only, soft editorial fills -------------- */
+.tc-badge-critical {
+  background-color: #DC2626;
+  color: #FFFFFF;
+  border: 1px solid #B91C1C;
+  border-radius: 6px;
+}
+
+.tc-badge-urgent {
+  background-color: #D97706;
+  color: #FFFFFF;
+  border: 1px solid #B45309;
+  border-radius: 6px;
+}
+
+.tc-badge-safe {
+  background-color: #16A34A;
+  color: #FFFFFF;
+  border: 1px solid #15803D;
+  border-radius: 6px;
+}
+
+.tc-badge-quiet {
+  background-color: var(--color-sage-soft);
+  color: var(--tc-accent-deep);
+  border: 1px solid rgba(63, 107, 51, 0.35);
+  border-radius: 6px;
+}
+
+/* Stage marker â€” clay editorial stamp, never wraps out of its box */
+.tc-stage {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background-color: var(--color-sage-soft);
+  color: var(--tc-accent-deep);
+  border: 1px solid rgba(63, 107, 51, 0.35);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* Drop zone / add row ----------------------------------------------------- */
+.tc-dropzone {
+  border: 1px dashed var(--color-rule);
+  border-radius: 12px;
+  background-color: var(--tc-paper-soft);
+  color: var(--tc-ink);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tc-dropzone:hover,
+.tc-dropzone.drag-over {
+  background-color: var(--color-sage-soft);
+  border-color: var(--tc-accent);
+}
+
+.tc-add-row {
+  cursor: pointer;
+  background-color: var(--tc-surface);
+  color: var(--tc-accent);
+  border-top: 1px solid var(--color-rule);
+  transition: background-color 0.15s ease;
+}
+
+.tc-add-row:hover {
+  background-color: var(--color-sage-soft);
+}
+
+/* Tables ------------------------------------------------------------------ */
+.tc-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tc-table-wrap table {
+  min-width: 820px;
+}
+
+/* Editorial marks --------------------------------------------------------- */
+.tc-deco-clay {
+  background-color: var(--color-sage-soft);
+  border-radius: 16px;
+}
+
+.tc-deco-ink {
+  background-color: rgba(36, 64, 30, 0.08);
+  border-radius: 16px;
+}
+
+.tc-pull-quote {
+  color: var(--tc-ink-deep);
+  font-size: 32px;
+  line-height: 1.2;
+  border-left: 3px solid var(--tc-accent);
+  padding-left: 24px;
+}
+
+/* ==========================================================================
+   Material Symbols
+   ========================================================================== */
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.icon-filled {
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+}
+
+/* ==========================================================================
+   Urgency scale - one source of truth for spines, dots and chips
+   ========================================================================== */
+.u-OVERDUE        { --u-color: #B91C1C; --u-ink: #8F1515; }
+.u-DAILY_CRITICAL { --u-color: #DC2626; --u-ink: #991B1B; }
+.u-T_5_CRITICAL   { --u-color: #EA580C; --u-ink: #9A3412; }
+.u-T_15_URGENT    { --u-color: #D97706; --u-ink: #8A4B04; }
+.u-T_30_ADVISORY  { --u-color: #CA8A04; --u-ink: #7A5303; }
+.u-SAFE_UPCOMING  { --u-color: #16A34A; --u-ink: #12703A; }
+.u-COMPLETED      { --u-color: #6B7280; --u-ink: #4B5563; }
+
+[data-theme="midnight"] .u-OVERDUE        { --u-color: #F87171; --u-ink: #FCA5A5; }
+[data-theme="midnight"] .u-DAILY_CRITICAL { --u-color: #F87171; --u-ink: #FCA5A5; }
+[data-theme="midnight"] .u-T_5_CRITICAL   { --u-color: #FB923C; --u-ink: #FDBA74; }
+[data-theme="midnight"] .u-T_15_URGENT    { --u-color: #FBBF24; --u-ink: #FCD34D; }
+[data-theme="midnight"] .u-T_30_ADVISORY  { --u-color: #FACC15; --u-ink: #FDE047; }
+[data-theme="midnight"] .u-SAFE_UPCOMING  { --u-color: #4ADE80; --u-ink: #86EFAC; }
+[data-theme="midnight"] .u-COMPLETED      { --u-color: #9CA3AF; --u-ink: #D1D5DB; }
+
+.u-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--u-color, var(--tc-ink-muted));
+  flex-shrink: 0;
+}
+
+.u-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--u-ink, var(--u-color, var(--tc-ink-muted)));
+  background: color-mix(in srgb, var(--u-color, var(--tc-ink-muted)) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--u-color, var(--tc-ink-muted)) 34%, transparent);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Kanban
+   ========================================================================== */
+.tc-kanban {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tc-rule-strong) transparent;
+}
+
+.tc-kanban::-webkit-scrollbar { height: 8px; }
+.tc-kanban::-webkit-scrollbar-thumb {
+  background: var(--tc-rule);
+  border-radius: 9999px;
+}
+
+.tc-kanban-col {
+  scroll-snap-align: start;
+  flex: 0 0 288px;
+  width: 288px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--tc-col-bg);
+  border: 1px solid var(--color-rule);
+  max-height: calc(100vh - 210px);
+}
+
+.tc-kanban-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--color-rule);
+  border-radius: 16px 16px 0 0;
+  background: var(--tc-paper-blur);
+  backdrop-filter: blur(6px);
+}
+
+.tc-kanban-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--tc-ink-deep);
+}
+
+.tc-kanban-count {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--tc-accent-deep);
+  background: var(--color-sage-soft);
+}
+
+.tc-kanban-meter {
+  margin-top: 10px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--tc-rule-soft);
+  overflow: hidden;
+}
+
+.tc-kanban-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--tc-accent);
+  transition: width 0.4s ease;
+}
+
+.tc-kanban-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+.tc-kanban-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px 12px 16px;
+  border-radius: 12px;
+  background: var(--tc-surface);
+  border: 1px solid var(--color-rule);
+  box-shadow: 0 1px 2px var(--tc-shadow-xs);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.tc-kanban-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--u-color, var(--tc-ink-muted));
+}
+
+.tc-kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--tc-shadow-md);
+  border-color: var(--tc-accent-hover-border);
+}
+
+.tc-kanban-card:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 2px;
+}
+
+.tc-kanban-ref {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--tc-accent-deep);
+}
+
+.tc-kanban-empty {
+  padding: 22px 12px;
+  border: 1px dashed var(--color-rule);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--tc-ink-muted);
+}
+
+.tc-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tc-on-accent);
+  background: var(--tc-accent);
+  flex-shrink: 0;
+}
+
+@keyframes tc-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.tc-rise {
+  animation: tc-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ==========================================================================
+   Calendar
+   ========================================================================== */
+.tc-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--color-rule);
+  border: 1px solid var(--color-rule);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tc-cal-dow {
+  background: var(--tc-paper-soft);
+  padding: 9px 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--tc-ink-muted);
+}
+
+.tc-cal-day {
+  position: relative;
+  background: var(--tc-surface);
+  min-height: 104px;
+  padding: 7px 7px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.tc-cal-day:hover { background: var(--tc-surface-hover); }
+
+.tc-cal-day:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.tc-cal-day.is-outside { background: var(--tc-surface-mute); }
+.tc-cal-day.is-outside .tc-cal-num { color: color-mix(in srgb, var(--tc-ink-muted) 78%, transparent); }
+
+.tc-cal-day.is-selected {
+  background: var(--color-sage-soft);
+  box-shadow: inset 0 0 0 2px var(--tc-accent);
+}
+
+.tc-cal-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-ink-deep);
+  width: 24px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.tc-cal-day.is-today .tc-cal-num {
+  background: var(--tc-accent);
+  color: var(--tc-on-accent);
+}
+
+.tc-cal-event {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--u-ink, var(--u-color, var(--tc-ink-muted)));
+  background: color-mix(in srgb, var(--u-color, var(--tc-ink-muted)) 15%, transparent);
+  border-left: 3px solid var(--u-color, var(--tc-ink-muted));
+  overflow: hidden;
+}
+
+.tc-cal-event > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-cal-more {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tc-ink-muted);
+  padding-left: 4px;
+}
+
+.tc-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--color-rule);
+  background: var(--tc-surface);
+  color: var(--tc-ink-deep);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tc-icon-btn:hover {
+  background: var(--color-sage-soft);
+  border-color: var(--tc-accent);
+  color: var(--tc-accent-deep);
+}
+
+.tc-icon-btn:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-rise { animation: none; }
+  .tc-kanban-card:hover { transform: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Compact calendar: below 640px the day cell is ~49px wide, too narrow for
+   text chips - collapse each event to an urgency bar. */
+@media (max-width: 640px) {
+  .tc-cal-day {
+    min-height: 76px;
+    padding: 5px 4px 6px;
+    gap: 3px;
+  }
+
+  .tc-cal-event {
+    height: 6px;
+    padding: 0;
+    border-left-width: 0;
+    border-radius: 9999px;
+    background: var(--u-color, var(--tc-ink-muted));
+  }
+
+  .tc-cal-event > span { display: none; }
+
+  .tc-cal-more { font-size: 9px; padding-left: 2px; }
+
+  .tc-cal-num { width: 22px; height: 20px; font-size: 11px; }
+}
+
+/* Pills: buttons and tabs read as capsules, not rectangles. */
+.btn {
+  border-radius: 9999px;
+}
+
+.tab {
+  border-radius: calc(var(--radius-box, 1rem) - 4px);
+}
+
+/* ==========================================================================
+   Calendar: month picker, day header row, indicators
+   ========================================================================== */
+.tc-month-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-rule);
+  background: var(--tc-surface);
+  font-size: 15px;
+  line-height: 1;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tc-month-trigger:hover {
+  background: var(--color-sage-soft);
+  border-color: var(--tc-accent);
+}
+
+.tc-month-trigger:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 2px;
+}
+
+.tc-month-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: 236px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--tc-surface);
+  border: 1px solid var(--color-rule);
+  box-shadow: 0 14px 34px var(--tc-shadow-lg);
+  animation: tc-rise 0.16s ease-out both;
+}
+
+.tc-month-cell {
+  height: 34px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-ink-deep);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.tc-month-cell:hover {
+  background: var(--color-sage-soft);
+}
+
+.tc-month-cell:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: 1px;
+}
+
+.tc-month-cell.is-active {
+  background: var(--tc-accent);
+  color: var(--tc-paper);
+}
+
+/* Day header row inside a cell */
+.tc-cal-daytop {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.tc-cal-todaytag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tc-accent);
+  background: var(--color-sage-soft);
+  border-radius: 9999px;
+  padding: 1px 6px;
+  line-height: 1.5;
+}
+
+.tc-cal-count {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--u-ink, var(--u-color, var(--tc-ink-muted)));
+  background: color-mix(in srgb, var(--u-color, var(--tc-ink-muted)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--u-color, var(--tc-ink-muted)) 30%, transparent);
+}
+
+.tc-cal-dow {
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .tc-cal-todaytag { display: none; }
+  .tc-cal-count { padding: 0 4px; font-size: 9px; }
+  .tc-month-trigger { font-size: 14px; padding: 0 12px; }
+  .tc-month-pop { width: 210px; }
+}
+
+/* ==========================================================================
+   Popover menu (theme switcher)
+   ========================================================================== */
+.tc-menu-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 194px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--tc-surface);
+  border: 1px solid var(--tc-rule);
+  box-shadow: 0 14px 34px var(--tc-shadow-lg);
+  animation: tc-rise 0.16s ease-out both;
+}
+
+.tc-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tc-ink);
+  background: transparent;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.tc-menu-item:hover {
+  background: var(--tc-accent-soft);
+}
+
+.tc-menu-item:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: -2px;
+}
+
+.tc-menu-item.is-active {
+  background: var(--tc-accent-soft);
+  color: var(--tc-accent-deep);
+  font-weight: 700;
+}
+
+.tc-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--tc-rule);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Date picker - replaces the native input[type=date] popup
+   ========================================================================== */
+.tc-datefield {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-ink-deep);
+  background: var(--tc-surface);
+  border: 1px solid var(--tc-rule);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.tc-datefield:hover {
+  border-color: var(--tc-accent);
+  background: var(--tc-accent-soft);
+}
+
+.tc-datefield:focus-visible {
+  outline: 3px solid var(--tc-accent);
+  outline-offset: 2px;
+}
+
+.tc-datefield-value {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: -0.01em;
+}
+
+/* on the dark escalation strip */
+.tc-datefield-invert .tc-datefield {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+}
+
+.tc-datefield-invert .tc-datefield:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.tc-datepop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 268px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--tc-surface);
+  border: 1px solid var(--tc-rule);
+  box-shadow: 0 18px 40px var(--tc-shadow-lg);
+  animation: tc-rise 0.16s ease-out both;
+  color: var(--tc-ink);
+}
+
+.tc-datepop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tc-datepop-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tc-ink-deep);
+}
+
+.tc-datepop-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.tc-datepop-dow {
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--tc-ink-muted);
+}
+
+.tc-datepop-day {
+  height: 32px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--tc-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.tc-datepop-day:hover {
+  background: var(--tc-accent-soft);
+}
+
+.tc-datepop-day:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: -1px;
+}
+
+.tc-datepop-day.is-outside {
+  color: var(--tc-ink-muted);
+  opacity: 0.68;
+}
+
+.tc-datepop-day.is-today {
+  border-color: var(--tc-accent);
+}
+
+.tc-datepop-day.is-selected {
+  background: var(--tc-accent);
+  color: var(--tc-on-accent);
+  font-weight: 700;
+  border-color: var(--tc-accent);
+}
+
+.tc-datepop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--tc-rule);
+}
+
+.tc-datepop-link {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tc-accent);
+  padding: 3px 6px;
+  border-radius: 8px;
+}
+
+.tc-datepop-link:hover {
+  background: var(--tc-accent-soft);
+  color: var(--tc-accent-deep);
+}
+
+.tc-datepop-link:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: 1px;
+}
+
+/* ==========================================================================
+   Kanban drag and drop
+   ========================================================================== */
+.tc-kanban-card {
+  cursor: grab;
+}
+
+.tc-kanban-card:active {
+  cursor: grabbing;
+}
+
+.tc-kanban-card.is-dragging {
+  opacity: 0.42;
+  transform: scale(0.98) rotate(-1deg);
+  box-shadow: 0 12px 26px var(--tc-shadow-md);
+}
+
+.tc-kanban-grip {
+  color: var(--tc-ink-muted);
+  opacity: 0.5;
+  cursor: grab;
+  margin-left: -3px;
+}
+
+.tc-kanban-card:hover .tc-kanban-grip {
+  opacity: 1;
+  color: var(--tc-accent);
+}
+
+.tc-kanban-col.is-dropping {
+  border-color: var(--tc-accent);
+  background: var(--tc-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--tc-accent);
+}
+
+.tc-kanban-col.is-dropping .tc-kanban-empty {
+  border-color: var(--tc-accent);
+  border-style: solid;
+  color: var(--tc-accent-deep);
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+.tc-toast {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tc-accent-deep);
+  background: var(--tc-accent-soft);
+  border: 1px solid var(--tc-accent);
+  animation: tc-rise 0.2s ease-out both;
+}
+
+.tc-toast.is-error {
+  color: #B91C1C;
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+/* Spinner for the refresh icon while a fetch is in flight. */
+@keyframes tc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.tc-spin {
+  animation: tc-spin 0.9s linear infinite;
+}
+
+.tc-icon-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Sidebar nav. Styled here rather than with utilities: daisyUI's .menu rules
+   set the anchor colour from its own palette, which beat the utility classes
+   and left the labels unreadable in the dark theme. */
+.tc-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tc-ink);
+  background: transparent;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.tc-nav-link:hover {
+  background: var(--tc-accent-soft);
+  color: var(--tc-accent-deep);
+}
+
+.tc-nav-link:focus-visible {
+  outline: 2px solid var(--tc-accent);
+  outline-offset: -2px;
+}
+
+.tc-nav-link.is-active {
+  background: var(--tc-accent-soft);
+  color: var(--tc-accent-deep);
+  font-weight: 700;
+}

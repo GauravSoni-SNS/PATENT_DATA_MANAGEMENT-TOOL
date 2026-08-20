@@ -1,6 +1,15 @@
-# Logs and temporary files
+node_modules/
+dist/
+.env
+backend/.env
+backend/.pgdata/
+backend/uploads/
+frontend/dist/
 *.log
 .DS_Store
 Thumbs.db
-node_modules/
 .system_generated/
+
+# Local editor / agent tooling caches
+.cursor/
+frontend/.agents/
