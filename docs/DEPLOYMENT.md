@@ -33,13 +33,13 @@ It will ask for the one value marked `sync: false`:
 ```
 rootDir:       backend
 buildCommand:  npm ci && npm run render:build
-startCommand:  npm start
+startCommand:  npm run start:prod
 healthCheck:   /api/v1/health
 ```
 
-`render:build` runs `prisma db push` (creates the tables — this project has no migration history, so `db push` is the correct call) and then `tsc`. `postinstall` runs `prisma generate` so the client matches the schema.
+`render:build` only compiles TypeScript. The schema push runs in the **start** command instead, because `DATABASE_URL` is not present in Render build environments - see troubleshooting below. `postinstall` runs `prisma generate` so the client matches the schema.
 
-First deploy takes roughly 3–5 minutes. When the health check passes you get a URL like:
+`prisma db push` is idempotent: on later restarts it finds no drift and exits in a second or two.
 
 ```
 https://lexpatent-api.onrender.com
@@ -131,3 +131,32 @@ Save — Render restarts the service. Then load the Vercel URL and log in. If lo
 2. Rotate the seeded `password123` accounts.
 3. No rate limiting on `/auth/login`.
 4. `GET /uploads/*` is served without auth — anyone with a URL can read a receipt.
+
+---
+
+## Troubleshooting
+
+### Build fails: `Environment variable not found: DATABASE_URL` (P1012)
+
+```
+> prisma db push --skip-generate
+Error code: P1012
+error: Environment variable not found: DATABASE_URL.
+```
+
+Render build environments do not receive the database connection string — a
+`fromDatabase` reference resolves at runtime, not at build. Any Prisma command
+that opens a connection therefore fails during the build.
+
+Fixed by moving the schema push out of `buildCommand` into `startCommand`:
+
+```yaml
+buildCommand: npm ci && npm run render:build   # tsc only
+startCommand: npm run start:prod               # prisma db push, then node dist/index.js
+```
+
+If you created the service by hand rather than from the blueprint, set both
+commands on the service's **Settings** page to match, and confirm `DATABASE_URL`
+is listed under **Environment** (it appears automatically only when the service
+and database were created together by the blueprint; otherwise add it yourself
+using the database's **Internal Database URL**).

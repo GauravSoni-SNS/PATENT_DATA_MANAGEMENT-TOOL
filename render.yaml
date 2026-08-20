@@ -13,8 +13,11 @@ services:
     runtime: node
     plan: free
     rootDir: backend
+    # The build must not touch the database: DATABASE_URL is absent from Render
+    # build environments, so prisma db push runs in the start command, which
+    # has the full runtime environment.
     buildCommand: npm ci && npm run render:build
-    startCommand: npm start
+    startCommand: npm run start:prod
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
