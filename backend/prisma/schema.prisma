@@ -108,6 +108,7 @@ model Firm {
   notifications Notification[]
   auditLogs     AuditLog[]
 
+  alertSetting AlertSetting?
   @@map("firms")
 }
 
@@ -130,6 +131,7 @@ model User {
   firm                 Firm          @relation(fields: [firmId], references: [id])
   leadMatters          Matter[]      @relation("LeadAttorney")
   supervisingMatters   Matter[]      @relation("SupervisingPartner")
+  createdMatters       Matter[]      @relation("MatterCreatedBy")
   uploadedReceipts     Receipt[]     @relation("UploadedBy")
   verifications        Verification[] @relation("VerifiedBy")
   clearedDeadlines     Deadline[]    @relation("ClearedBy")
@@ -173,6 +175,7 @@ model Matter {
   status               MatterStatus     @default(ACTIVE)
   leadAttorneyId       String?          @map("lead_attorney_id")
   supervisingPartnerId String?          @map("supervising_partner_id")
+  createdById          String?          @map("created_by_id")
   abstract             String?
   parentMatterId       String?          @map("parent_matter_id")
   metadata             Json             @default("{}")
@@ -184,6 +187,7 @@ model Matter {
   client             Client?  @relation(fields: [clientId], references: [id])
   leadAttorney       User?    @relation("LeadAttorney", fields: [leadAttorneyId], references: [id])
   supervisingPartner User?    @relation("SupervisingPartner", fields: [supervisingPartnerId], references: [id])
+  createdBy          User?    @relation("MatterCreatedBy", fields: [createdById], references: [id])
   deadlines          Deadline[]
   receipts           Receipt[]
   notifications      Notification[]
@@ -331,4 +335,26 @@ model RefreshToken {
   @@index([userId])
   @@index([tokenHash])
   @@map("refresh_tokens")
+}
+
+/// How and when this firm sends deadline alerts. One row per firm.
+model AlertSetting {
+  id             String   @id @default(uuid())
+  firmId         String   @unique @map("firm_id")
+  schedule       String   @default("EVE_OF")
+  leadDays       Int      @default(10) @map("lead_days")
+  /// Local time of day the scan runs, in the firm timezone.
+  runAtHour      Int      @default(8) @map("run_at_hour")
+  runAtMinute    Int      @default(0) @map("run_at_minute")
+  timezone       String   @default("Asia/Kolkata")
+  enabled        Boolean  @default(true)
+  emailEnabled   Boolean  @default(true) @map("email_enabled")
+  whatsappEnabled Boolean @default(true) @map("whatsapp_enabled")
+  lastRunAt      DateTime? @map("last_run_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  firm Firm @relation(fields: [firmId], references: [id])
+
+  @@map("alert_settings")
 }

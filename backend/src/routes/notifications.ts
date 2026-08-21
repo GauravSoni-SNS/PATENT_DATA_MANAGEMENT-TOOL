@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { evaluateMatterNotifications, getRadarCounts, NotificationRecipient } from '../services/notificationService';
 import { dispatchNotification, channelStatus } from '../services/dispatchService';
-import { scheduleDays, SCHEDULES } from '../services/alertSchedule';
+import { scheduleDays, SCHEDULES, AlertScheduleId } from '../services/alertSchedule';
+import { getAlertSettings, scheduleFirm, runScanForFirm, scheduleDescription } from '../services/alertScheduler';
 import { env } from '../config/env';
 import { verifyEmailTransport, sendEmail } from '../services/channels/email';
 import { sendWhatsApp, isWhatsAppConfigured, fetchContacts, isReachable } from '../services/channels/whatsapp';
@@ -68,81 +69,27 @@ router.get('/:id/preview', authenticate, async (req, res, next) => {
 
 router.post('/scan', authenticate, async (req, res, next) => {
   try {
-    const firmId = req.user!.firmId;
-
-    const matters = await prisma.matter.findMany({
-      where: { firmId, deletedAt: null, status: 'ACTIVE' },
-      include: {
-        client: true,
-        leadAttorney: true,
-        supervisingPartner: true,
-        deadlines: true,
-      },
-    });
-
-    const generated = [];
-    let skipped = 0;
-    for (const matter of matters) {
-      const notifs = evaluateMatterNotifications(matter);
-      for (const n of notifs) {
-        // Same deadline, same tier, same days remaining is the same calendar
-        // day: re-running the scan must not alert anyone twice.
-        const alreadySent = await prisma.notification.findFirst({
-          where: {
-            firmId,
-            deadlineId: n.deadlineId,
-            tier: n.tier,
-            daysRemaining: n.daysRemaining,
-          },
-        });
-        if (alreadySent) {
-          skipped += 1;
-          continue;
-        }
-
-        const record = await prisma.notification.create({
-          data: {
-            firmId,
-            matterId: matter.id,
-            deadlineId: n.deadlineId,
-            tier: n.tier,
-            tierLabel: n.tierLabel,
-            subject: n.subject,
-            bodyHtml: n.bodyHtml,
-            recipients: n.recipients as object,
-            daysRemaining: n.daysRemaining,
-            isEmergency: n.isEmergency,
-            status: 'PENDING' as NotificationStatus,
-          },
-        });
-        const outcome = await dispatchNotification({
-          notificationId: record.id,
-          subject: n.subject,
-          bodyHtml: n.bodyHtml,
-          targets: n.recipients.map((r) => ({ name: r.name, email: r.email, phone: r.phone, role: r.role })),
-        });
-        generated.push({ ...record, status: outcome.status, deliveries: outcome.deliveries });
-      }
-    }
-
+    const summary = await runScanForFirm(req.user!.firmId);
+    const settings = await getAlertSettings(req.user!.firmId);
     res.json({
       success: true,
       data: {
-        scannedAt: new Date().toISOString(),
-        notificationsGenerated: generated.length,
-        alreadyAlerted: skipped,
-        schedule: { id: env.alertSchedule, leadDays: env.alertLeadDays, firesOnDays: scheduleDays(env.alertSchedule, env.alertLeadDays) },
+        scannedAt: summary.ranAt,
+        notificationsGenerated: summary.generated,
+        delivered: summary.delivered,
+        alreadyAlerted: summary.alreadyAlerted,
         channels: channelStatus(),
-        delivered: generated.filter((g) => g.status === 'DELIVERED' || g.status === 'SENT').length,
-        undelivered: generated.filter((g) => g.status === 'PENDING').length,
-        notifications: generated,
+        schedule: {
+          id: settings.schedule,
+          leadDays: settings.leadDays,
+          firesOnDays: scheduleDays(settings.schedule as AlertScheduleId, settings.leadDays),
+        },
       },
     });
   } catch (e) {
     next(e);
   }
 });
-
 
 /** Which delivery channels are actually configured on this deployment. */
 /**
@@ -244,6 +191,84 @@ router.post('/:id/resend', authenticate, async (req, res, next) => {
       targets: targets.map((r) => ({ name: r.name, email: r.email, phone: r.phone, role: r.role })),
     });
     res.json({ success: true, data: outcome });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Current alert configuration for the caller's firm. */
+router.get('/settings', authenticate, async (req, res, next) => {
+  try {
+    const settings = await getAlertSettings(req.user!.firmId);
+    res.json({
+      success: true,
+      data: {
+        ...settings,
+        firesOnDays: scheduleDays(settings.schedule as AlertScheduleId, settings.leadDays),
+        scheduleLabel: SCHEDULES[settings.schedule as AlertScheduleId]?.label ?? settings.schedule,
+        description: scheduleDescription(settings),
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * Updates the schedule. Re-arms the cron job immediately so a change takes
+ * effect without a restart.
+ */
+router.patch('/settings', authenticate, authorize('ADMIN', 'PARTNER', 'ATTORNEY'), async (req, res, next) => {
+  try {
+    const firmId = req.user!.firmId;
+    await getAlertSettings(firmId);
+
+    const body = req.body ?? {};
+    const data: Record<string, unknown> = {};
+
+    if (body.schedule !== undefined) {
+      if (!['EVE_OF', 'HALVING', 'DAILY'].includes(body.schedule)) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'schedule must be EVE_OF, HALVING or DAILY', status: 422 } });
+      }
+      data.schedule = body.schedule;
+    }
+    if (body.leadDays !== undefined) {
+      const n = Number(body.leadDays);
+      if (!Number.isInteger(n) || n < 1 || n > 365) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'leadDays must be between 1 and 365', status: 422 } });
+      }
+      data.leadDays = n;
+    }
+    if (body.runAtHour !== undefined) {
+      const n = Number(body.runAtHour);
+      if (!Number.isInteger(n) || n < 0 || n > 23) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'runAtHour must be 0 to 23', status: 422 } });
+      }
+      data.runAtHour = n;
+    }
+    if (body.runAtMinute !== undefined) {
+      const n = Number(body.runAtMinute);
+      if (!Number.isInteger(n) || n < 0 || n > 59) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'runAtMinute must be 0 to 59', status: 422 } });
+      }
+      data.runAtMinute = n;
+    }
+    if (body.timezone !== undefined) data.timezone = String(body.timezone);
+    if (body.enabled !== undefined) data.enabled = Boolean(body.enabled);
+    if (body.emailEnabled !== undefined) data.emailEnabled = Boolean(body.emailEnabled);
+    if (body.whatsappEnabled !== undefined) data.whatsappEnabled = Boolean(body.whatsappEnabled);
+
+    const updated = await prisma.alertSetting.update({ where: { firmId }, data });
+    await scheduleFirm(firmId);
+
+    res.json({
+      success: true,
+      data: {
+        ...updated,
+        firesOnDays: scheduleDays(updated.schedule as AlertScheduleId, updated.leadDays),
+        description: scheduleDescription(updated),
+      },
+    });
   } catch (e) {
     next(e);
   }
