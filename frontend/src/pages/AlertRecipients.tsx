@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi, notificationsApi } from '../api/client';
 import { Icon } from './../components/Icon';
+import { AlertSchedule } from './AlertSchedule';
 
 interface Person {
   id: string;
@@ -201,36 +202,6 @@ export function AlertRecipients() {
         </div>
       )}
 
-      <div className="tc-card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Icon name="schedule" size={18} className="text-sage" filled />
-          <h3 className="font-bold text-sm text-ink-deep">When alerts fire</h3>
-        </div>
-        {channels?.schedule ? (
-          <p className="text-sm text-ink">
-            <strong>{channels.schedule.label}</strong> — alerts at{' '}
-            <span className="font-mono">T-{channels.schedule.firesOnDays.join(', T-')}</span>, plus every scan once a
-            deadline is overdue.
-          </p>
-        ) : (
-          <p className="text-sm text-ink-muted">Loading schedule…</p>
-        )}
-        <p className="text-[11px] text-ink-muted">
-          Set by <span className="font-mono">ALERT_SCHEDULE</span> on the server: EVE_OF, HALVING or DAILY.
-        </p>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          <span className={`u-chip ${channels?.email?.configured ? 'u-SAFE_UPCOMING' : 'u-T_15_URGENT'}`}>
-            <Icon name="mail" size={14} />
-            Email {channels?.email?.configured ? (channels.email.reachable ? 'connected' : 'configured, unreachable') : 'not configured'}
-          </span>
-          <span className={`u-chip ${channels?.whatsapp?.configured ? 'u-SAFE_UPCOMING' : 'u-T_15_URGENT'}`}>
-            <Icon name="chat" size={14} />
-            WhatsApp {channels?.whatsapp?.configured ? `connected (${channels.whatsapp.optedInContacts ?? 0} opted in)` : 'not configured'}
-          </span>
-        </div>
-      </div>
-
       <div className="tc-panel p-3 text-[12px] text-ink flex items-start gap-2">
         <Icon name="info" size={16} className="text-sage mt-px shrink-0" />
         <span>
@@ -238,6 +209,8 @@ export function AlertRecipients() {
           after their last message. A number marked <strong>Not opted in</strong> will receive email but not WhatsApp.
         </span>
       </div>
+      <AlertSchedule />
+
 
       {table('Team', users, (p, phone) => saveUser.mutate({ id: p.id, phone }), saveUser.isPending)}
       {table('Client contacts', clients, (p, phone) => saveClient.mutate({ id: p.id, phone }), saveClient.isPending)}

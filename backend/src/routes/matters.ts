@@ -80,6 +80,7 @@ router.get('/', authenticate, async (req, res, next) => {
       include: {
         client: true,
         leadAttorney: { select: { id: true, firstName: true, lastName: true, email: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         supervisingPartner: { select: { id: true, firstName: true, lastName: true } },
         deadlines: { where: { status: { in: ['PENDING', 'WAITING_VERIFICATION', 'OVERDUE'] } } },
       },
@@ -172,7 +173,11 @@ router.post('/', authenticate, async (req, res, next) => {
         filingDate: filingDate ? new Date(filingDate) : null,
         officialAppNumber,
         clientId,
-        leadAttorneyId,
+        // The uploader owns the matter; alerts are sent to them.
+
+        createdById: req.user!.id,
+
+        leadAttorneyId: leadAttorneyId || req.user!.id,
         supervisingPartnerId,
         abstract,
         applicationType,

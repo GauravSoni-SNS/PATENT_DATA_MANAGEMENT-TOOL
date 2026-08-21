@@ -1,6 +1,6 @@
 import { NotificationTier, UserRole } from '@prisma/client';
 import { getSimulatedDate, calculateDaysRemaining, getUrgencyTier } from './deadlineService';
-import { decideAlert } from './alertSchedule';
+import { decideAlert, AlertScheduleId } from './alertSchedule';
 import { env } from '../config/env';
 
 export interface NotificationRecipient {
@@ -23,8 +23,9 @@ export interface GeneratedNotification {
   isEmergency: boolean;
 }
 
-function getTierForDays(days: number): { tier: NotificationTier; tierLabel: string; isEmergency: boolean } | null {
-  return decideAlert(days, env.alertSchedule, env.alertLeadDays);
+/** Per-firm settings win; the environment is only the fallback. */
+function getTierForDays(days: number, schedule?: AlertScheduleId, leadDays?: number) {
+  return decideAlert(days, schedule ?? env.alertSchedule, leadDays ?? env.alertLeadDays);
 }
 
 export function generateEmailSubject(tier: NotificationTier, days: number, matterNumber: string, deadlineTitle: string): string {
@@ -82,9 +83,8 @@ interface MatterForNotification {
   id: string;
   matterNumber: string;
   title: string;
-  client?: { contactPerson?: string | null; contactEmail?: string | null; contactPhone?: string | null } | null;
+  createdBy?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
   leadAttorney?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
-  supervisingPartner?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
   deadlines: Array<{
     id: string;
     title: string;
@@ -93,35 +93,30 @@ interface MatterForNotification {
   }>;
 }
 
-export function evaluateMatterNotifications(matter: MatterForNotification): GeneratedNotification[] {
+export function evaluateMatterNotifications(
+  matter: MatterForNotification,
+  options?: { schedule?: AlertScheduleId; leadDays?: number }
+): GeneratedNotification[] {
   const results: GeneratedNotification[] = [];
   const pending = matter.deadlines.filter((d) => d.status === 'PENDING' || d.status === 'WAITING_VERIFICATION');
 
   for (const deadline of pending) {
     const days = calculateDaysRemaining(deadline.statutoryDueDate);
-    const tierInfo = getTierForDays(days);
+    const tierInfo = getTierForDays(days, options?.schedule, options?.leadDays);
     if (!tierInfo) continue;
 
-    const attorney = matter.leadAttorney;
-    const partner = matter.supervisingPartner;
+    // One recipient: whoever uploaded the matter. Alerting a wider group was
+    // the reason alerts got ignored, and clients are never contacted by this
+    // tool at all.
+    const owner = matter.createdBy ?? matter.leadAttorney;
     const recipients: NotificationRecipient[] = [];
-
-    if (attorney) {
-      recipients.push({ name: `${attorney.firstName} ${attorney.lastName}`, email: attorney.email, phone: attorney.phone, role: 'Lead Attorney' });
-    }
-    if (partner && tierInfo.tier !== 'T_30_ADVISORY') {
-      recipients.push({ name: `${partner.firstName} ${partner.lastName}`, email: partner.email, phone: partner.phone, role: 'Supervising Partner' });
-    }
-    if (tierInfo.tier === 'T_5_CRITICAL' || tierInfo.tier === 'DAILY_COUNTDOWN') {
-      if (matter.client?.contactEmail) {
-        recipients.push({
-          name: matter.client.contactPerson || 'Client Legal Contact',
-          email: matter.client.contactEmail,
-          phone: matter.client.contactPhone,
-          role: 'Client Legal Contact',
-        });
-      }
-      recipients.push({ name: 'Docket Risk Committee', email: 'ip-risk@lexpatent-ip.com', role: 'Safety Oversight' });
+    if (owner) {
+      recipients.push({
+        name: `${owner.firstName} ${owner.lastName}`,
+        email: owner.email,
+        phone: owner.phone,
+        role: 'Matter owner',
+      });
     }
 
     const subject = generateEmailSubject(tierInfo.tier, days, matter.matterNumber, deadline.title);

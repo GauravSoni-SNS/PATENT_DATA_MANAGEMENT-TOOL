@@ -216,6 +216,10 @@ router.post('/auto-docket/confirm', authenticate, async (req, res, next) => {
         officialAppNumber: parsed.officialAppNumber,
         abstract: parsed.abstract,
         clientId: client?.id,
+        // The uploader owns the matter; alerts are sent to them.
+
+        createdById: req.user!.id,
+
         leadAttorneyId: leadAttorneyId || req.user!.id,
         supervisingPartnerId,
         deadlines: {
