@@ -8,6 +8,12 @@ import { useReference } from '../lib/reference';
 
 interface ParsedReceipt {
   matterNumber?: string;
+  /** How the text was obtained and how well it was recognised. */
+  readSource?: string;
+  ocrConfidence?: number;
+  confidence?: number;
+  profileLabel?: string;
+  missing?: string[];
   title?: string;
   jurisdiction?: string;
   stage?: string;
@@ -309,6 +315,30 @@ export function AddMatterModal() {
                     <div><span className="opacity-60">Stage:</span> <strong>{parsed.stage?.replace(/_/g, ' ')}</strong></div>
                     <div><span className="opacity-60">Trigger date:</span> <strong className="font-mono">{parsed.triggerDate}</strong></div>
                   </div>
+                  {parsed?.readSource?.startsWith('ocr') && (
+                    <div className="tc-panel p-3 mb-3 flex items-start gap-2 text-[12px] text-ink">
+                      <Icon name="visibility" size={16} className="text-sage mt-px shrink-0" />
+                      <span>
+                        Read by OCR from a scan
+                        {typeof parsed.ocrConfidence === 'number' && (
+                          <> at <strong>{Math.round(parsed.ocrConfidence * 100)}% confidence</strong></>
+                        )}
+                        . Character errors are common in scans, so check every field below against the document
+                        before confirming.
+                      </span>
+                    </div>
+                  )}
+                  {typeof parsed?.confidence === 'number' && parsed.confidence < 0.5 && (
+                    <div className="tc-panel p-3 mb-3 flex items-start gap-2 text-[12px] text-ink">
+                      <Icon name="help" size={16} className="text-sage mt-px shrink-0" />
+                      <span>
+                        This document was not confidently recognised
+                        {parsed.profileLabel ? <> as <strong>{parsed.profileLabel}</strong></> : null}. Field values may
+                        be missing or wrong.
+                      </span>
+                    </div>
+                  )}
+
                   {deadlines.length > 0 && (
                     <div>
                       <p className="text-xs font-bold uppercase mb-2">Proposed deadlines ({deadlines.length})</p>

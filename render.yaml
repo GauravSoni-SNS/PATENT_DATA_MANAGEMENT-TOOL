@@ -39,6 +39,10 @@ services:
         value: EVE_OF
       - key: ALERT_LEAD_DAYS
         value: "10"
+      # tesseract.js needs roughly 150-250 MB once loaded. The free instance
+      # has 512 MB total, so leave OCR off there and turn it on after upgrading.
+      - key: OCR_ENABLED
+        value: "false"
       # Email alerts. Without these the API records alerts as undelivered
       # rather than pretending they were sent.
       - key: SMTP_HOST
