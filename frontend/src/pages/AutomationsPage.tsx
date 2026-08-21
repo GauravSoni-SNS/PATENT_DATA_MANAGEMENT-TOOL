@@ -104,8 +104,14 @@ export default function AutomationsPage() {
         </span>
         <span className={`u-chip ${channels?.whatsapp?.configured ? 'u-SAFE_UPCOMING' : 'u-T_15_URGENT'}`}>
           <Icon name="chat" size={14} />
-          WhatsApp {channels?.whatsapp?.configured ? 'connected' : 'not configured'}
+          WhatsApp {channels?.whatsapp?.configured ? `connected (${channels.whatsapp.optedInContacts ?? 0} opted in)` : 'not configured'}
         </span>
+        {channels?.unreachableOnWhatsApp > 0 && (
+          <span className="u-chip u-T_15_URGENT">
+            <Icon name="phonelink_erase" size={14} />
+            {channels.unreachableOnWhatsApp} recipients unreachable on WhatsApp
+          </span>
+        )}
         {(!channels?.email?.configured || !channels?.whatsapp?.configured) && (
           <span className="text-[11px] text-ink-muted">
             Alerts are recorded but not delivered until the missing channel is configured.

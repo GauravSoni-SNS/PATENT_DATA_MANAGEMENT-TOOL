@@ -99,3 +99,51 @@ export async function sendWhatsApp(params: {
     };
   }
 }
+
+export interface WhatsAppContact {
+  id: string;
+  waPhoneNumber: string;
+  name?: string;
+}
+
+/**
+ * Contacts that have messaged the business account. WhatsApp only permits a
+ * free-form message to these, and only within 24 hours of their last inbound
+ * message, so this is the set of numbers an alert can currently reach.
+ */
+export async function fetchContacts(): Promise<{ ok: boolean; contacts: WhatsAppContact[]; detail: string }> {
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, contacts: [], detail: 'WHATSAPP_API_URL and WHATSAPP_API_KEY not set' };
+  }
+
+  // The send endpoint sits alongside the rest of the v1 API.
+  const contactsUrl = env.whatsapp.apiUrl.replace(/\/messages\/send\/?$/, '/contacts');
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(contactsUrl, {
+      headers: {
+        [env.whatsapp.authHeader]: env.whatsapp.authScheme
+          ? `${env.whatsapp.authScheme} ${env.whatsapp.apiKey}`
+          : env.whatsapp.apiKey,
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return { ok: false, contacts: [], detail: `HTTP ${res.status} from ${contactsUrl}` };
+
+    const json = (await res.json()) as { data?: { contacts?: WhatsAppContact[] } };
+    const contacts = json?.data?.contacts ?? [];
+    return { ok: true, contacts, detail: `${contacts.length} contacts have opted in` };
+  } catch (e) {
+    return { ok: false, contacts: [], detail: (e as Error).message };
+  }
+}
+
+export function isReachable(phone: string | null | undefined, contacts: WhatsAppContact[]): boolean {
+  if (!phone) return false;
+  const target = normalisePhone(phone);
+  return contacts.some((c) => normalisePhone(String(c.waPhoneNumber)) === target);
+}

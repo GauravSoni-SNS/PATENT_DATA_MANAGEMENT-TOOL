@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth';
 import { evaluateMatterNotifications, getRadarCounts, NotificationRecipient } from '../services/notificationService';
 import { dispatchNotification, channelStatus } from '../services/dispatchService';
 import { verifyEmailTransport, sendEmail } from '../services/channels/email';
-import { sendWhatsApp, isWhatsAppConfigured } from '../services/channels/whatsapp';
+import { sendWhatsApp, isWhatsAppConfigured, fetchContacts, isReachable } from '../services/channels/whatsapp';
 import { NotificationStatus } from '@prisma/client';
 
 const router = Router();
@@ -126,16 +126,60 @@ router.post('/scan', authenticate, async (req, res, next) => {
 
 
 /** Which delivery channels are actually configured on this deployment. */
-router.get('/channels', authenticate, async (_req, res) => {
-  const status = channelStatus();
-  const email = await verifyEmailTransport();
-  res.json({
-    success: true,
-    data: {
-      email: { ...status.email, reachable: email.ok, detail: email.detail },
-      whatsapp: { ...status.whatsapp, detail: isWhatsAppConfigured() ? 'Gateway configured' : 'WHATSAPP_API_URL and WHATSAPP_API_KEY not set' },
-    },
-  });
+/**
+ * Which delivery channels are configured, and who they can actually reach.
+ *
+ * WhatsApp reachability is not a yes/no per deployment: the gateway will only
+ * message a contact that has written in first, so a configured channel can
+ * still be unable to reach a given attorney. That is reported per recipient
+ * rather than discovered when an alert silently fails.
+ */
+router.get('/channels', authenticate, async (req, res, next) => {
+  try {
+    const status = channelStatus();
+    const email = await verifyEmailTransport();
+    const wa = await fetchContacts();
+
+    const [users, clients] = await Promise.all([
+      prisma.user.findMany({
+        where: { firmId: req.user!.firmId, isActive: true },
+        select: { firstName: true, lastName: true, phone: true, role: true },
+      }),
+      prisma.client.findMany({
+        where: { firmId: req.user!.firmId },
+        select: { name: true, contactPhone: true },
+      }),
+    ]);
+
+    const recipients = [
+      ...users.map((u) => ({
+        name: `${u.firstName} ${u.lastName}`,
+        role: u.role,
+        phone: u.phone,
+      })),
+      ...clients.map((c) => ({ name: c.name, role: 'CLIENT', phone: c.contactPhone })),
+    ].map((r) => ({
+      ...r,
+      whatsappReachable: wa.ok ? isReachable(r.phone, wa.contacts) : null,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        email: { ...status.email, reachable: email.ok, detail: email.detail },
+        whatsapp: {
+          ...status.whatsapp,
+          reachable: wa.ok,
+          optedInContacts: wa.contacts.length,
+          detail: isWhatsAppConfigured() ? wa.detail : 'WHATSAPP_API_URL and WHATSAPP_API_KEY not set',
+        },
+        recipients,
+        unreachableOnWhatsApp: recipients.filter((r) => r.whatsappReachable === false).length,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
 });
 
 /** Sends a real test message so channel setup can be proven end to end. */
