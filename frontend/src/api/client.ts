@@ -103,6 +103,9 @@ export const rulesApi = {
 export const dashboardApi = {
   summary: () => api.get('/dashboard/summary'),
   users: () => api.get('/dashboard/users'),
+  recipients: () => api.get('/dashboard/recipients'),
+  setUserPhone: (id: string, phone: string) => api.patch(`/dashboard/users/${id}`, { phone }),
+  setClientPhone: (id: string, contactPhone: string) => api.patch(`/dashboard/clients/${id}`, { contactPhone }),
 };
 
 export const verificationsApi = {

@@ -73,4 +73,97 @@ router.get('/audit', authenticate, authorize('ADMIN', 'PARTNER'), async (req, re
   }
 });
 
+
+/**
+ * Everyone who can receive an alert, with the phone number WhatsApp would use.
+ * Readable by any signed-in user: the team needs to see who is covered without
+ * needing an admin.
+ */
+router.get('/recipients', authenticate, async (req, res, next) => {
+  try {
+    const firmId = req.user!.firmId;
+    const [users, clients] = await Promise.all([
+      prisma.user.findMany({
+        where: { firmId, isActive: true },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true },
+        orderBy: { firstName: 'asc' },
+      }),
+      prisma.client.findMany({
+        where: { firmId },
+        select: { id: true, name: true, contactPerson: true, contactEmail: true, contactPhone: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    res.json({ success: true, data: { users, clients } });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Digits, optionally a leading +, 8-15 long. Empty clears the number. */
+function normalisePhoneInput(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null || String(raw).trim() === '') return null;
+  const digits = String(raw).replace(/[^\d]/g, '');
+  if (digits.length < 8 || digits.length > 15) return undefined;
+  return '+' + digits;
+}
+
+/**
+ * Updates a team member's alert phone number.
+ *
+ * Only the phone is writable, and only within the caller's firm: a body is
+ * never handed to Prisma directly, so no other column can be reached.
+ */
+router.patch('/users/:id', authenticate, async (req, res, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const caller = req.user!;
+    const isPrivileged = caller.role === 'ADMIN' || caller.role === 'PARTNER';
+    if (!isPrivileged && caller.id !== id) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'You can only change your own number', status: 403 } });
+    }
+
+    const phone = normalisePhoneInput(req.body?.phone);
+    if (phone === undefined) {
+      return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Enter 8 to 15 digits, or leave blank to clear', status: 422 } });
+    }
+
+    const existing = await prisma.user.findFirst({ where: { id, firmId: caller.firmId } });
+    if (!existing) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found', status: 404 } });
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { phone },
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true },
+    });
+    res.json({ success: true, data: updated });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Same rules for a client's alert contact number. */
+router.patch('/clients/:id', authenticate, authorize('ADMIN', 'PARTNER', 'ATTORNEY'), async (req, res, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const phone = normalisePhoneInput(req.body?.contactPhone);
+    if (phone === undefined) {
+      return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Enter 8 to 15 digits, or leave blank to clear', status: 422 } });
+    }
+
+    const existing = await prisma.client.findFirst({ where: { id, firmId: req.user!.firmId } });
+    if (!existing) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Client not found', status: 404 } });
+
+    const updated = await prisma.client.update({
+      where: { id },
+      data: { contactPhone: phone },
+      select: { id: true, name: true, contactEmail: true, contactPhone: true },
+    });
+    res.json({ success: true, data: updated });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

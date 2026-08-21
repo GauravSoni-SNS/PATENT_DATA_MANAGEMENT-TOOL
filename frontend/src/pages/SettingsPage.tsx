@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
+import { AlertRecipients } from './AlertRecipients';
 
-type TabId = 'profile' | 'notifications' | 'security' | 'workspace';
+type TabId = 'alerts' | 'profile' | 'security' | 'workspace';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<TabId>('profile');
+  const [tab, setTab] = useState<TabId>('alerts');
   const [saving, setSaving] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'success' | 'error'>('idle');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [dailyDigest, setDailyDigest] = useState(true);
-  const [criticalSms, setCriticalSms] = useState(false);
   const [autoDocket, setAutoDocket] = useState(true);
 
   const handleSave = async () => {
@@ -23,17 +21,10 @@ export default function SettingsPage() {
     setTimeout(() => setSaveState('idle'), 3000);
   };
 
-  const handleErrorDemo = async () => {
-    setSaving(true);
-    setSaveState('idle');
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    setSaveState('error');
-  };
 
   const tabs: { id: TabId; label: string }[] = [
+      { id: 'alerts', label: 'Alerts & numbers' },
     { id: 'profile', label: 'Profile' },
-    { id: 'notifications', label: 'Notifications' },
     { id: 'security', label: 'Security' },
     { id: 'workspace', label: 'Workspace' },
   ];
@@ -116,45 +107,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {tab === 'notifications' && (
-        <div className="tc-card text-ink">
-          <div className="card-body gap-4 p-4 sm:p-6">
-            <h3 className="card-title font-black uppercase text-base">Notification preferences</h3>
-            <div role="alert" className="alert alert-warning border border-rule">
-              <span>⚠</span>
-              <span className="text-sm font-semibold">Critical alerts (T-5 and daily countdown) cannot be fully disabled per firm policy.</span>
-            </div>
-            <div className="space-y-4">
-              <label className="flex items-center justify-between gap-4 p-3 border border-rule bg-base-200">
-                <div>
-                  <div className="font-bold">Email escalation alerts</div>
-                  <div className="text-xs opacity-70">T-30, T-15, T-5 tier notifications</div>
-                </div>
-                <input type="checkbox" className="toggle toggle-primary border border-rule" checked={emailAlerts} onChange={(e) => setEmailAlerts(e.target.checked)} />
-              </label>
-              <label className="flex items-center justify-between gap-4 p-3 border border-rule bg-base-200">
-                <div>
-                  <div className="font-bold">Daily digest at 08:00 AM</div>
-                  <div className="text-xs opacity-70">Morning radar summary for your matters</div>
-                </div>
-                <input type="checkbox" className="toggle toggle-secondary border border-rule" checked={dailyDigest} onChange={(e) => setDailyDigest(e.target.checked)} />
-              </label>
-              <label className="flex items-center justify-between gap-4 p-3 border border-rule bg-base-200 opacity-60">
-                <div>
-                  <div className="font-bold">SMS for daily critical</div>
-                  <div className="text-xs">Requires verified mobile — coming soon</div>
-                </div>
-                <input type="checkbox" className="toggle toggle-error border border-rule" checked={criticalSms} onChange={(e) => setCriticalSms(e.target.checked)} disabled />
-              </label>
-            </div>
-            <div className="card-actions justify-end">
-              <button type="button" className="btn btn-secondary border border-rule tc-btn" onClick={handleSave} disabled={saving}>
-                {saving ? <span className="loading loading-spinner loading-sm" /> : 'Save notifications'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {tab === 'alerts' && <AlertRecipients />}
 
       {tab === 'security' && (
         <div className="tc-card text-ink">
@@ -174,9 +127,6 @@ export default function SettingsPage() {
               <p className="text-error text-xs font-bold mt-1">Passwords do not match.</p>
             </fieldset>
             <div className="card-actions justify-between flex-wrap gap-2">
-              <button type="button" className="btn btn-error btn-outline border border-rule font-bold" onClick={handleErrorDemo} disabled={saving}>
-                Demo error state
-              </button>
               <button type="button" className="btn tc-btn-primary tc-btn" onClick={handleSave} disabled={saving}>
                 {saving ? <span className="loading loading-spinner loading-sm" /> : 'Update password'}
               </button>
