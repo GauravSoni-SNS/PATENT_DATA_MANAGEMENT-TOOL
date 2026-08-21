@@ -121,6 +121,7 @@ model User {
   role           UserRole
   specialization String?
   avatarUrl      String?  @map("avatar_url")
+  phone         String?  @map("phone")
   isActive       Boolean  @default(true) @map("is_active")
   lastLoginAt    DateTime? @map("last_login_at")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -146,6 +147,7 @@ model Client {
   code          String?
   contactPerson String?  @map("contact_person")
   contactEmail  String?  @map("contact_email")
+  contactPhone  String?  @map("contact_phone")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -286,6 +288,7 @@ model Notification {
   daysRemaining  Int?               @map("days_remaining")
   status         NotificationStatus @default(PENDING)
   sentAt         DateTime?          @map("sent_at")
+  deliveries     Json?              @map("deliveries")
   isEmergency    Boolean            @default(false) @map("is_emergency")
   createdAt      DateTime           @default(now()) @map("created_at")
 

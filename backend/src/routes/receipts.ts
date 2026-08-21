@@ -7,6 +7,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { env } from '../config/env';
 import { createAuditLog, advanceStageAfterClearance } from '../services/auditService';
 import { parseReceiptText, listSamples, getSampleById } from '../services/receiptParserService';
+import { extractReceiptText, assertUsableParse, ReceiptReadError } from '../services/receiptTextService';
 import { generateDeadlinesForStage } from '../services/rulesEngine';
 import { computeDeadlineFields } from '../services/deadlineService';
 import { ReceiptType, JurisdictionCode, ProsecutionStage } from '@prisma/client';
@@ -130,10 +131,12 @@ router.post('/auto-docket', authenticate, upload.single('file'), async (req, res
       const sample = getSampleById(req.body.sampleId);
       parsed = sample?.extractedData;
     } else if (req.file) {
-      const text = fs.readFileSync(req.file.path, 'utf-8');
+      const text = await extractReceiptText(req.file.path, req.file.originalname);
       parsed = parseReceiptText(text);
+      assertUsableParse(parsed as Record<string, unknown>);
     } else if (req.body.rawText) {
       parsed = parseReceiptText(req.body.rawText);
+      assertUsableParse(parsed as Record<string, unknown>);
     } else {
       return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Provide file, sampleId, or rawText', status: 422 } });
     }
@@ -149,6 +152,9 @@ router.post('/auto-docket', authenticate, upload.single('file'), async (req, res
       },
     });
   } catch (e) {
+    if (e instanceof ReceiptReadError) {
+      return res.status(422).json({ success: false, error: { code: 'RECEIPT_UNREADABLE', message: e.message, status: 422 } });
+    }
     next(e);
   }
 });

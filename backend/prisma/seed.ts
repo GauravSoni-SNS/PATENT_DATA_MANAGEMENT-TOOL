@@ -33,6 +33,7 @@ async function main() {
         firmId: firm.id,
         email: 's.jenkins@lexpatent-ip.com',
         passwordHash,
+        phone: '+919000000101',
         firstName: 'Sarah',
         lastName: 'Jenkins',
         role: UserRole.ATTORNEY,
@@ -45,6 +46,7 @@ async function main() {
         firmId: firm.id,
         email: 'd.chen@lexpatent-ip.com',
         passwordHash,
+        phone: '+919000000102',
         firstName: 'David',
         lastName: 'Chen',
         role: UserRole.ATTORNEY,
@@ -57,6 +59,7 @@ async function main() {
         firmId: firm.id,
         email: 'p.nair@lexpatent-ip.com',
         passwordHash,
+        phone: '+919000000103',
         firstName: 'Priya',
         lastName: 'Nair',
         role: UserRole.PARALEGAL,
@@ -69,6 +72,7 @@ async function main() {
         firmId: firm.id,
         email: 'm.vance@lexpatent-ip.com',
         passwordHash,
+        phone: '+919000000104',
         firstName: 'Marcus',
         lastName: 'Vance',
         role: UserRole.PARTNER,
@@ -81,6 +85,7 @@ async function main() {
         firmId: firm.id,
         email: 'admin@lexpatent-ip.com',
         passwordHash,
+        phone: '+919000000105',
         firstName: 'System',
         lastName: 'Admin',
         role: UserRole.ADMIN,
@@ -92,22 +97,22 @@ async function main() {
 
   const clients = await Promise.all([
     prisma.client.create({
-      data: { firmId: firm.id, name: 'Synapse Quantum Labs Inc.', code: 'SYN-Q', contactEmail: 'ip-legal@synapsequantum.io', contactPerson: 'Dr. Elena Rostova' },
+      data: { firmId: firm.id, name: 'Synapse Quantum Labs Inc.', code: 'SYN-Q', contactEmail: 'ip-legal@synapsequantum.io', contactPerson: 'Dr. Elena Rostova', contactPhone: '+919000000201' },
     }),
     prisma.client.create({
-      data: { firmId: firm.id, name: 'Aurelia Energy Technologies', code: 'AUR-EN', contactEmail: 'patents@aureliaenergy.com', contactPerson: 'Vikram Malhotra' },
+      data: { firmId: firm.id, name: 'Aurelia Energy Technologies', code: 'AUR-EN', contactEmail: 'patents@aureliaenergy.com', contactPerson: 'Vikram Malhotra', contactPhone: '+919000000202' },
     }),
     prisma.client.create({
-      data: { firmId: firm.id, name: 'SkyVector Aerospace AG', code: 'SKY-VEC', contactEmail: 'legal-docket@skyvector.aero', contactPerson: 'Dr. Johannes Weiss' },
+      data: { firmId: firm.id, name: 'SkyVector Aerospace AG', code: 'SKY-VEC', contactEmail: 'legal-docket@skyvector.aero', contactPerson: 'Dr. Johannes Weiss', contactPhone: '+919000000203' },
     }),
     prisma.client.create({
-      data: { firmId: firm.id, name: 'GeneVanguard Therapeutics LLC', code: 'GENE-V', contactEmail: 'ip@genevanguard.com', contactPerson: 'Dr. Arthur Campbell' },
+      data: { firmId: firm.id, name: 'GeneVanguard Therapeutics LLC', code: 'GENE-V', contactEmail: 'ip@genevanguard.com', contactPerson: 'Dr. Arthur Campbell', contactPhone: '+919000000204' },
     }),
     prisma.client.create({
-      data: { firmId: firm.id, name: 'BioNova Diagnostic Systems', code: 'BIONOVA', contactEmail: 'legal@bionovadiag.in', contactPerson: 'Sunita Deshmukh' },
+      data: { firmId: firm.id, name: 'BioNova Diagnostic Systems', code: 'BIONOVA', contactEmail: 'legal@bionovadiag.in', contactPerson: 'Sunita Deshmukh', contactPhone: '+919000000205' },
     }),
     prisma.client.create({
-      data: { firmId: firm.id, name: 'OptiCore Photonics Corp.', code: 'OPTICORE', contactEmail: 'legal@opticore.com', contactPerson: 'Dr. Arvind Rao' },
+      data: { firmId: firm.id, name: 'OptiCore Photonics Corp.', code: 'OPTICORE', contactEmail: 'legal@opticore.com', contactPerson: 'Dr. Arvind Rao', contactPhone: '+919000000206' },
     }),
   ]);
 
