@@ -429,3 +429,26 @@ free-form text. Options:
 2. Treat WhatsApp as best-effort and keep email as the channel of record.
 
 Email is unconditional and has no such window, so it stays the primary channel.
+
+### WhatsApp reachability
+
+`GET /api/v1/notifications/channels` now also reports who WhatsApp can actually
+reach. It reads the gateway's contact list and marks every firm user and client
+contact as reachable or not:
+
+```json
+{ "whatsapp": { "configured": true, "reachable": true, "optedInContacts": 20 },
+  "recipients": [ { "name": "Sarah Jenkins", "phone": "+919000000101", "whatsappReachable": false } ],
+  "unreachableOnWhatsApp": 11 }
+```
+
+A configured gateway is not the same as a deliverable alert. A recipient is
+reachable only if that number has messaged the business account, and the window
+closes 24 hours after their last inbound message. The Automations page shows the
+count so this is visible before an alert is due rather than after it failed.
+
+To make a recipient reachable: send one WhatsApp from their handset to the
+business number, then put that same number on their profile.
+
+The seeded demo numbers (`+9190000001xx`) are placeholders and will never be
+reachable — replace them with real numbers.
