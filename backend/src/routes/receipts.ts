@@ -127,13 +127,33 @@ router.post('/parse-sample', authenticate, (req, res) => {
 
 router.post('/auto-docket', authenticate, upload.single('file'), async (req, res, next) => {
   try {
-    let parsed;
+    interface ParsedPreview {
+      matterNumber?: string;
+      officialAppNumber?: string;
+      cbrNumber?: string;
+      title?: string;
+      clientName?: string;
+      clientEmail?: string;
+      jurisdiction?: string;
+      stage?: string;
+      triggerDate?: string;
+      priorityDate?: string;
+      officialFees?: number;
+      currency?: string;
+      profileId?: string | null;
+      profileLabel?: string;
+      confidence?: number;
+      missing?: string[];
+      readSource?: string;
+      ocrConfidence?: number;
+    }
+    let parsed: ParsedPreview | undefined;
     if (req.body.sampleId) {
       const sample = getSampleById(req.body.sampleId);
       parsed = sample?.extractedData;
     } else if (req.file) {
-      const text = await extractReceiptText(req.file.path, req.file.originalname);
-      parsed = extractDocument(text);
+      const read = await extractReceiptText(req.file.path, req.file.originalname);
+      parsed = { ...extractDocument(read.text), readSource: read.source, ocrConfidence: read.ocrConfidence };
       assertUsableParse(parsed);
     } else if (req.body.rawText) {
       parsed = extractDocument(req.body.rawText);

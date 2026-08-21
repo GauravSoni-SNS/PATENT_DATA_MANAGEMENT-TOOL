@@ -485,3 +485,41 @@ anything:
 ```bash
 cd backend && npx tsx scripts/preview-schedule.ts
 ```
+
+## OCR for scanned receipts
+
+Scans are read with tesseract.js. A scanned PDF has no text layer, so its page
+images are pulled out with `pdf-parse` and recognised one at a time; an uploaded
+image goes straight to the recogniser.
+
+```
+OCR_ENABLED=true      # false rejects scans with a clear message instead
+OCR_LANGUAGE=eng
+```
+
+English training data ships in `node_modules/@tesseract.js-data/eng`, so no
+download happens at runtime. Without it the first scan of every cold start
+blocks on a CDN fetch that may never complete.
+
+**Memory.** A loaded worker holds roughly 150-250 MB. Render's free instance has
+512 MB in total, so `render.yaml` sets `OCR_ENABLED=false` there. Turn it on
+after moving to a paid instance.
+
+**Accuracy.** OCR misreads characters. A local test of a low-quality scan
+produced:
+
+```
+GOVERNMENT OF THNDIA          (INDIA)
+CER NUMBER: CBR-2826-558431   (CBR, 2026)
+NOTICE OF HERRING             (HEARING)
+DATE OF FILING: 12/84/2826    (12/04/2026)
+```
+
+Every value taken from a scan is therefore marked with its source and
+confidence, and the auto-docket screen tells the user to check each field
+before confirming. **Do not treat an OCR read as docketed data without a human
+looking at it.** A digit flipped in an application number is silent; a digit
+flipped in a date moves a statutory deadline.
+
+Real 300 dpi scans of printed office documents read far better than that
+example, which used a deliberately coarse synthetic font.
