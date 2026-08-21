@@ -60,6 +60,7 @@ export async function sendWhatsApp(params: {
     [env.whatsapp.toField]: target,
     [env.whatsapp.messageField]: params.message,
   };
+  if (env.whatsapp.messageType) body.type = env.whatsapp.messageType;
   if (env.whatsapp.sender) body[env.whatsapp.senderField] = env.whatsapp.sender;
 
   try {
@@ -81,13 +82,10 @@ export async function sendWhatsApp(params: {
 
     const text = await res.text();
     if (!res.ok) {
-      return {
-        channel: 'whatsapp',
-        target,
-        status: 'FAILED',
-        detail: `HTTP ${res.status}: ${text.slice(0, 300)}`,
-        at,
-      };
+      const detail = text.includes('number_not_found')
+        ? `HTTP ${res.status}: that number has never messaged the business account. WhatsApp only permits a free-form reply inside the 24-hour window a contact opens, or an approved template. ${text.slice(0, 200)}`
+        : `HTTP ${res.status}: ${text.slice(0, 300)}`;
+      return { channel: 'whatsapp', target, status: 'FAILED', detail, at };
     }
     return { channel: 'whatsapp', target, status: 'SENT', detail: text.slice(0, 300), at };
   } catch (e) {

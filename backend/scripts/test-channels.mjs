@@ -42,7 +42,7 @@ const wa = {
   authHeader: process.env.WHATSAPP_AUTH_HEADER || 'Authorization',
   authScheme: process.env.WHATSAPP_AUTH_SCHEME ?? 'Bearer',
   toField: process.env.WHATSAPP_TO_FIELD || 'to',
-  messageField: process.env.WHATSAPP_MESSAGE_FIELD || 'message',
+  messageField: process.env.WHATSAPP_MESSAGE_FIELD || 'text',
   senderField: process.env.WHATSAPP_SENDER_FIELD || 'from',
 };
 
@@ -121,6 +121,7 @@ async function checkWhatsApp() {
 
   const to = targetPhone.replace(/[^\d]/g, '');
   const body = { [wa.toField]: to, [wa.messageField]: 'LexPatent Docket Radar - channel test' };
+  if (process.env.WHATSAPP_TYPE ?? 'text') body.type = process.env.WHATSAPP_TYPE ?? 'text';
   if (wa.sender) body[wa.senderField] = wa.sender;
 
   const headers = {

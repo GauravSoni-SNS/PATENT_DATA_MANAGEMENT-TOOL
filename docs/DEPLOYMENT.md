@@ -388,3 +388,44 @@ matching a different gateway shape never needs a code change:
 
 Configure locally in `backend/.env` first, confirm with the script, then copy
 the same values into Render's Environment tab.
+
+### Visity WhatsApp: the payload
+
+Discovered by probing the endpoint, since the developer page needs a login.
+The defaults in `env.ts` now match it, so Render only needs the URL and key.
+
+```
+POST https://wa.visity.io/api/v1/messages/send
+Authorization: Bearer <WHATSAPP_API_KEY>
+Content-Type: application/json
+
+{ "to": "919000000104", "type": "text", "text": "..." }
+```
+
+The message field is `text`, not `message`. Sending `message` returns
+`400 {"error":"text is required for type=text"}`. Omitting `to` returns
+`400 {"error":"to is required"}`.
+
+**A contact must message the business number before the app can message them.**
+An unknown number returns:
+
+```
+404 {"error":"number_not_found",
+     "message":"No contact found with this phone number. The contact must have messaged you first."}
+```
+
+That is WhatsApp's rule, not Visity's: free-form messages are only allowed
+inside the 24-hour window a contact opens by writing to you. Outside it, only
+an approved template may be sent.
+
+For deadline alerts this matters. Every attorney, partner and client contact
+who should receive WhatsApp alerts has to send one message to the business
+number first, and that window closes 24 hours after their last message. A
+docketing alert that must arrive on day 30 of silence will not go through as
+free-form text. Options:
+
+1. Register a WhatsApp **message template** for deadline alerts and send that
+   instead — the only reliable route for unprompted alerts.
+2. Treat WhatsApp as best-effort and keep email as the channel of record.
+
+Email is unconditional and has no such window, so it stays the primary channel.
