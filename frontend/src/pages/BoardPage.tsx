@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mattersApi } from '../api/client';
-import { stageLabel } from '../lib/stages';
+import { useReference } from '../lib/reference';
 import { useAddMatter } from '../context/AddMatterContext';
 import { Icon } from '../components/Icon';
 
@@ -27,6 +27,7 @@ function urgencyBadgeClass(key: string) {
 }
 
 export default function BoardPage() {
+  const { stageLabel } = useReference();
   const { openAddMatter } = useAddMatter();
   const [search, setSearch] = useState('');
   const [urgency, setUrgency] = useState('ALL');

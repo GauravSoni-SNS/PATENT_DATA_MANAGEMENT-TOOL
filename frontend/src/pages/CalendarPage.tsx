@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mattersApi } from '../api/client';
-import { stageLabel } from '../lib/stages';
+import { useReference } from '../lib/reference';
 import { Icon } from '../components/Icon';
 
 interface Deadline {
@@ -160,6 +160,7 @@ function MonthPicker({
 }
 
 export default function CalendarPage() {
+  const { stageLabel } = useReference();
   const { data: matters = [], isLoading } = useQuery<Matter[]>({
     queryKey: ['matters-calendar'],
     queryFn: () => mattersApi.list({ jurisdiction: 'ALL', attorney: 'ALL', urgency: 'ALL' }).then((r) => r.data.data),

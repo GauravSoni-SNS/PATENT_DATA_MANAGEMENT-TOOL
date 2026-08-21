@@ -166,4 +166,20 @@ router.patch('/clients/:id', authenticate, authorize('ADMIN', 'PARTNER', 'ATTORN
   }
 });
 
+/** Firm identity, so the UI never hardcodes the workspace name. */
+router.get('/firm', authenticate, async (req, res, next) => {
+  try {
+    const firm = await prisma.firm.findUnique({
+      where: { id: req.user!.firmId },
+      select: { id: true, name: true, slug: true, timezone: true },
+    });
+    if (!firm) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Firm not found', status: 404 } });
+    }
+    res.json({ success: true, data: firm });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;

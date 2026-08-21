@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAddMatter, AddMatterTab } from '../context/AddMatterContext';
 import { mattersApi, receiptsApi, clientsApi } from '../api/client';
 import { Icon } from './Icon';
+import { useReference } from '../lib/reference';
 
 interface ParsedReceipt {
   matterNumber?: string;
@@ -30,6 +31,7 @@ interface DeadlinePreview {
 }
 
 export function AddMatterModal() {
+  const { jurisdictions, stages } = useReference();
   const { isOpen, initialTab, closeAddMatter } = useAddMatter();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -335,10 +337,9 @@ export function AddMatterModal() {
                 <fieldset className="fieldset">
                   <legend className="fieldset-legend font-bold uppercase text-xs">Jurisdiction *</legend>
                   <select className="select tc-input w-full" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-                    <option value="IN">India (IPO)</option>
-                    <option value="US">United States (USPTO)</option>
-                    <option value="EP">Europe (EPO)</option>
-                    <option value="WO">PCT (WIPO)</option>
+                    {jurisdictions.map((j) => (
+                      <option key={j.code} value={j.code}>{j.name}</option>
+                    ))}
                   </select>
                 </fieldset>
               </div>
@@ -363,10 +364,9 @@ export function AddMatterModal() {
                 <fieldset className="fieldset">
                   <legend className="fieldset-legend font-bold uppercase text-xs">Initial stage *</legend>
                   <select className="select tc-input w-full" value={stage} onChange={(e) => setStage(e.target.value)}>
-                    <option value="PROVISIONAL">Provisional (12m bar)</option>
-                    <option value="COMPLETE">Complete / Non-Provisional</option>
-                    <option value="EXAMINATION_FER">FER / Office Action</option>
-                    <option value="HEARING">Oral Hearing</option>
+                    {stages.map((st) => (
+                      <option key={st.id} value={st.id}>{st.label}</option>
+                    ))}
                   </select>
                 </fieldset>
                 <fieldset className="fieldset">
