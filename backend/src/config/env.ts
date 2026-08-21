@@ -36,7 +36,9 @@ export const env = {
     authHeader: process.env.WHATSAPP_AUTH_HEADER || 'Authorization',
     authScheme: process.env.WHATSAPP_AUTH_SCHEME ?? 'Bearer',
     toField: process.env.WHATSAPP_TO_FIELD || 'to',
-    messageField: process.env.WHATSAPP_MESSAGE_FIELD || 'message',
+    messageField: process.env.WHATSAPP_MESSAGE_FIELD || 'text',
     senderField: process.env.WHATSAPP_SENDER_FIELD || 'from',
+    /** Visity expects type=text; blank omits the field for gateways that reject it. */
+    messageType: process.env.WHATSAPP_TYPE ?? 'text',
   },
 };
