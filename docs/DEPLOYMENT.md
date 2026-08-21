@@ -337,3 +337,26 @@ shows channel state and a per-alert delivery breakdown.
 This is field extraction over text, **not OCR**. Scanned paper receipts need an
 OCR engine (Tesseract or a cloud OCR API), which is not installed — it would not
 fit in a 512 MB free instance.
+
+### Seeding a remote database
+
+`npm run db:remote` pushes the schema and seeds it, with guards for the mistakes
+that are easy to make from a terminal. It reads `DATABASE_URL` from the shell
+only (never `.env`), refuses to touch localhost, rewrites a Neon pooled host to
+the direct one, drops `channel_binding`, prints the target before acting, and
+will not seed if the push fails.
+
+PowerShell, from the backend directory:
+
+```powershell
+cd backend
+$env:DATABASE_URL="postgresql://USER:PASSWORD@ep-xxxx.region.aws.neon.tech/neondb?sslmode=require"
+npm run db:remote
+```
+
+cmd.exe uses `set "DATABASE_URL=..."` instead. Append `-- --no-seed` to push the
+schema without deleting rows.
+
+Run it from `backend/`, never the repo root: the Prisma schema lives there, and
+from the root `npx` downloads an unrelated Prisma version because it cannot find
+one.
