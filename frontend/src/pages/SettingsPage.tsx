@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from '../components/Icon';
 import { AlertRecipients } from './AlertRecipients';
+import { useReference } from '../lib/reference';
 
 type TabId = 'alerts' | 'profile' | 'security' | 'workspace';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { firm } = useReference();
   const [tab, setTab] = useState<TabId>('alerts');
   const [saving, setSaving] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'success' | 'error'>('idle');
@@ -150,7 +152,7 @@ export default function SettingsPage() {
             </fieldset>
             <fieldset className="fieldset">
               <legend className="fieldset-legend font-bold uppercase text-xs">Firm name</legend>
-              <input type="text" className="input input-bordered tc-input" defaultValue="LexPatent IP LLP" />
+              <input type="text" className="input input-bordered tc-input" value={firm?.name ?? ''} readOnly />
             </fieldset>
             <label className="flex items-center justify-between gap-4 p-3 border border-rule">
               <div>

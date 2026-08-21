@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { mattersApi } from '../api/client';
-import { STAGE_IDS, stageLabel } from '../lib/stages';
+import { useReference } from '../lib/reference';
 import { Icon } from '../components/Icon';
 
 interface Matter {
@@ -17,7 +17,6 @@ interface Matter {
   nearestDeadline?: { title: string; statutoryDueDate: string } | null;
 }
 
-const JURISDICTION_LABEL: Record<string, string> = { IN: 'India', US: 'USPTO', EP: 'EPO', WO: 'PCT' };
 
 function initials(name?: string) {
   if (!name) return '--';
@@ -38,6 +37,10 @@ function MatterCard({
   onDragStart,
   onDragEnd,
   onKeyMove,
+
+  stageLabel,
+
+  jurisdictionLabel,
 }: {
   m: Matter;
   index: number;
@@ -45,6 +48,10 @@ function MatterCard({
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onKeyMove: (dir: -1 | 1) => void;
+
+  stageLabel: (id: string) => string;
+
+  jurisdictionLabel: (code: string) => string;
 }) {
   const urgencyKey = m.urgency?.key || 'COMPLETED';
   return (
@@ -68,7 +75,7 @@ function MatterCard({
         <Icon name="drag_indicator" size={15} className="tc-kanban-grip" />
         <span className="tc-kanban-ref">{m.matterNumber}</span>
         <span className="ml-auto text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
-          {JURISDICTION_LABEL[m.jurisdiction] || m.jurisdiction}
+          {jurisdictionLabel(m.jurisdiction)}
         </span>
       </div>
 
@@ -99,6 +106,7 @@ function MatterCard({
 
 export default function KanbanPage() {
   const qc = useQueryClient();
+  const { stageIds: STAGE_IDS, stageLabel, jurisdictionLabel } = useReference();
   const [hideEmpty, setHideEmpty] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
@@ -163,13 +171,13 @@ export default function KanbanPage() {
   const drop = (id: string, to: string) => {
     const matter = matters.find((m) => m.id === id);
     if (!matter || matter.currentStage === to) return;
-    const forward = STAGE_IDS.indexOf(to as (typeof STAGE_IDS)[number]) >
-      STAGE_IDS.indexOf(matter.currentStage as (typeof STAGE_IDS)[number]);
+    const forward = STAGE_IDS.indexOf(to) >
+      STAGE_IDS.indexOf(matter.currentStage);
     moveStage.mutate({ id, to, forward });
   };
 
   const keyMove = (m: Matter, dir: -1 | 1) => {
-    const i = STAGE_IDS.indexOf(m.currentStage as (typeof STAGE_IDS)[number]);
+    const i = STAGE_IDS.indexOf(m.currentStage);
     const next = STAGE_IDS[i + dir];
     if (next) drop(m.id, next);
   };
@@ -244,6 +252,8 @@ export default function KanbanPage() {
               {cards.map((m, i) => (
                 <MatterCard
                   key={m.id}
+                  stageLabel={stageLabel}
+                  jurisdictionLabel={jurisdictionLabel}
                   m={m}
                   index={i}
                   dragging={dragId === m.id}

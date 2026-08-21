@@ -8,6 +8,7 @@ import { env } from '../config/env';
 import { createAuditLog, advanceStageAfterClearance } from '../services/auditService';
 import { parseReceiptText, listSamples, getSampleById } from '../services/receiptParserService';
 import { extractReceiptText, assertUsableParse, ReceiptReadError } from '../services/receiptTextService';
+import { extractDocument, listProfiles } from '../services/documentExtractor';
 import { generateDeadlinesForStage } from '../services/rulesEngine';
 import { computeDeadlineFields } from '../services/deadlineService';
 import { ReceiptType, JurisdictionCode, ProsecutionStage } from '@prisma/client';
@@ -132,11 +133,11 @@ router.post('/auto-docket', authenticate, upload.single('file'), async (req, res
       parsed = sample?.extractedData;
     } else if (req.file) {
       const text = await extractReceiptText(req.file.path, req.file.originalname);
-      parsed = parseReceiptText(text);
-      assertUsableParse(parsed as Record<string, unknown>);
+      parsed = extractDocument(text);
+      assertUsableParse(parsed);
     } else if (req.body.rawText) {
-      parsed = parseReceiptText(req.body.rawText);
-      assertUsableParse(parsed as Record<string, unknown>);
+      parsed = extractDocument(req.body.rawText);
+      assertUsableParse(parsed);
     } else {
       return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Provide file, sampleId, or rawText', status: 422 } });
     }
@@ -220,6 +221,12 @@ router.post('/auto-docket/confirm', authenticate, async (req, res, next) => {
   }
 });
 
-export default router;
 
 // Verification routes in separate file but also deadline clear
+
+/** The document types the knowledge base recognises. */
+router.get('/document-profiles', authenticate, (_req, res) => {
+  res.json({ success: true, data: listProfiles() });
+});
+
+export default router;
