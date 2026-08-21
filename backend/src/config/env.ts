@@ -16,6 +16,14 @@ export const env = {
   uploadDir: process.env.UPLOAD_DIR || './uploads',
   simulatedDate: process.env.SIMULATED_DATE || new Date().toISOString().split('T')[0],
 
+  /**
+   * Which days produce an alert. EVE_OF is the default because the team's
+   * failure mode is a hearing date arriving unnoticed, not a shortage of
+   * notifications.
+   */
+  alertSchedule: (process.env.ALERT_SCHEDULE || 'EVE_OF') as 'EVE_OF' | 'HALVING' | 'DAILY',
+  alertLeadDays: parseInt(process.env.ALERT_LEAD_DAYS || '10', 10),
+
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '587', 10),

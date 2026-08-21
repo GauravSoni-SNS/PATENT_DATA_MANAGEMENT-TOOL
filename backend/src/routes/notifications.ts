@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
 import { evaluateMatterNotifications, getRadarCounts, NotificationRecipient } from '../services/notificationService';
 import { dispatchNotification, channelStatus } from '../services/dispatchService';
+import { scheduleDays, SCHEDULES } from '../services/alertSchedule';
+import { env } from '../config/env';
 import { verifyEmailTransport, sendEmail } from '../services/channels/email';
 import { sendWhatsApp, isWhatsAppConfigured, fetchContacts, isReachable } from '../services/channels/whatsapp';
 import { NotificationStatus } from '@prisma/client';
@@ -79,15 +81,30 @@ router.post('/scan', authenticate, async (req, res, next) => {
     });
 
     const generated = [];
+    let skipped = 0;
     for (const matter of matters) {
       const notifs = evaluateMatterNotifications(matter);
       for (const n of notifs) {
-        const nearestDeadline = matter.deadlines.find((d) => d.status === 'PENDING' || d.status === 'WAITING_VERIFICATION');
+        // Same deadline, same tier, same days remaining is the same calendar
+        // day: re-running the scan must not alert anyone twice.
+        const alreadySent = await prisma.notification.findFirst({
+          where: {
+            firmId,
+            deadlineId: n.deadlineId,
+            tier: n.tier,
+            daysRemaining: n.daysRemaining,
+          },
+        });
+        if (alreadySent) {
+          skipped += 1;
+          continue;
+        }
+
         const record = await prisma.notification.create({
           data: {
             firmId,
             matterId: matter.id,
-            deadlineId: nearestDeadline?.id,
+            deadlineId: n.deadlineId,
             tier: n.tier,
             tierLabel: n.tierLabel,
             subject: n.subject,
@@ -113,9 +130,11 @@ router.post('/scan', authenticate, async (req, res, next) => {
       data: {
         scannedAt: new Date().toISOString(),
         notificationsGenerated: generated.length,
+        alreadyAlerted: skipped,
+        schedule: { id: env.alertSchedule, leadDays: env.alertLeadDays, firesOnDays: scheduleDays(env.alertSchedule, env.alertLeadDays) },
         channels: channelStatus(),
         delivered: generated.filter((g) => g.status === 'DELIVERED' || g.status === 'SENT').length,
-        skipped: generated.filter((g) => g.status === 'PENDING').length,
+        undelivered: generated.filter((g) => g.status === 'PENDING').length,
         notifications: generated,
       },
     });
@@ -166,6 +185,12 @@ router.get('/channels', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       data: {
+        schedule: {
+          id: env.alertSchedule,
+          leadDays: env.alertLeadDays,
+          firesOnDays: scheduleDays(env.alertSchedule, env.alertLeadDays),
+          label: SCHEDULES[env.alertSchedule]?.label ?? env.alertSchedule,
+        },
         email: { ...status.email, reachable: email.ok, detail: email.detail },
         whatsapp: {
           ...status.whatsapp,
