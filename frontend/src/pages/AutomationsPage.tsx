@@ -83,7 +83,7 @@ export default function AutomationsPage() {
         <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start gap-4 text-ink">
           <div>
             <h2 className="text-lg sm:text-xl font-bold uppercase">Automations & Email Escalations</h2>
-            <p className="text-sm opacity-70 mt-1">Tiered zero-fail alerts: T-30, T-15, T-5, daily countdown</p>
+            <p className="text-sm opacity-70 mt-1">{channels?.schedule ? `${channels.schedule.label} — alerts at T-${channels.schedule.firesOnDays.join(', T-')}, plus every day once overdue` : 'Tiered zero-fail alerts'}</p>
           </div>
           <button
             type="button"

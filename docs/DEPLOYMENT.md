@@ -452,3 +452,36 @@ business number, then put that same number on their profile.
 
 The seeded demo numbers (`+9190000001xx`) are placeholders and will never be
 reachable — replace them with real numbers.
+
+## Alert schedule
+
+The tool exists because hearing dates get missed, so the question is not what an
+alert says but which days it fires on. That is one setting:
+
+```
+ALERT_SCHEDULE=EVE_OF     # EVE_OF | HALVING | DAILY
+ALERT_LEAD_DAYS=10        # the window HALVING and DAILY work within
+```
+
+| Schedule | Fires at | Alerts per deadline |
+|---|---|---|
+| `EVE_OF` (default) | T-1, T-0 | 2 |
+| `HALVING` | T-10, T-5, T-2, T-1, T-0 | 5 |
+| `DAILY` | every day from T-10 | 11 |
+
+`HALVING` repeatedly halves the lead time and floors it: 10, 5, 2, 1, 0. A
+30-day lead gives 30, 15, 7, 3, 1, 0.
+
+**An overdue deadline alerts on every scan under all three schedules.** Silence
+after a missed date is the failure this tool is meant to prevent, so no schedule
+can switch that off.
+
+Alerts are de-duplicated on (deadline, tier, days remaining), so running the
+scan twice in a day does not alert anyone twice.
+
+See what a schedule would do against the current data, without sending
+anything:
+
+```bash
+cd backend && npx tsx scripts/preview-schedule.ts
+```

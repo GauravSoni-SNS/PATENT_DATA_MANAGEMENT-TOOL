@@ -1,5 +1,7 @@
 import { NotificationTier, UserRole } from '@prisma/client';
 import { getSimulatedDate, calculateDaysRemaining, getUrgencyTier } from './deadlineService';
+import { decideAlert } from './alertSchedule';
+import { env } from '../config/env';
 
 export interface NotificationRecipient {
   name: string;
@@ -10,6 +12,8 @@ export interface NotificationRecipient {
 }
 
 export interface GeneratedNotification {
+  /** The deadline this alert is about, not merely the matter it belongs to. */
+  deadlineId: string;
   tier: NotificationTier;
   tierLabel: string;
   subject: string;
@@ -20,12 +24,7 @@ export interface GeneratedNotification {
 }
 
 function getTierForDays(days: number): { tier: NotificationTier; tierLabel: string; isEmergency: boolean } | null {
-  if (days < 0) return { tier: 'DAILY_COUNTDOWN', tierLabel: 'OVERDUE EMERGENCY', isEmergency: true };
-  if (days <= 4) return { tier: 'DAILY_COUNTDOWN', tierLabel: `T-${days} DAILY COUNTDOWN (CRITICAL BLITZ)`, isEmergency: true };
-  if (days === 5) return { tier: 'T_5_CRITICAL', tierLabel: '5-DAY RED CRITICAL ALERT', isEmergency: true };
-  if (days <= 15) return { tier: 'T_15_URGENT', tierLabel: '15-DAY ORANGE WARNING', isEmergency: false };
-  if (days <= 30) return { tier: 'T_30_ADVISORY', tierLabel: '30-DAY AMBER ADVISORY', isEmergency: false };
-  return null;
+  return decideAlert(days, env.alertSchedule, env.alertLeadDays);
 }
 
 export function generateEmailSubject(tier: NotificationTier, days: number, matterNumber: string, deadlineTitle: string): string {
@@ -138,6 +137,7 @@ export function evaluateMatterNotifications(matter: MatterForNotification): Gene
     });
 
     results.push({
+      deadlineId: deadline.id,
       tier: tierInfo.tier,
       tierLabel: tierInfo.tierLabel,
       subject,
