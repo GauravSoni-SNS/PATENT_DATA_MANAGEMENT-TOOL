@@ -15,6 +15,7 @@
  *   node scripts/remote-db.mjs --no-seed push schema only
  */
 import { spawnSync } from 'child_process';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -57,8 +58,6 @@ if (url.hostname.includes('-pooler.')) {
 url.searchParams.delete('channel_binding');
 if (!url.searchParams.has('sslmode')) url.searchParams.set('sslmode', 'require');
 
-const target = url.toString();
-
 console.log('');
 console.log('  target database : ' + url.pathname.replace('/', '') + ' at ' + url.hostname);
 if (originalHost !== url.hostname) {
@@ -66,14 +65,35 @@ if (originalHost !== url.hostname) {
 }
 console.log('');
 
-const env = { ...process.env, DATABASE_URL: target };
+const env = { ...process.env, DATABASE_URL: url.toString() };
 
-const push = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['prisma', 'db', 'push', '--skip-generate'],
-  { cwd: backendDir, env, stdio: 'inherit' }
-);
-if (push.status !== 0) fail('Schema push failed; the database was not seeded.');
+/**
+ * Runs a CLI that lives in node_modules by calling its entry point with the
+ * current node binary. Spawning npx.cmd fails with EINVAL on Node 22 for
+ * Windows, and going through a shell would need the connection string quoted
+ * correctly on two different shells.
+ */
+function runLocalCli(label, relativeEntry, args) {
+  const entry = path.join(backendDir, relativeEntry);
+  if (!existsSync(entry)) {
+    fail(label + ' is not installed at ' + relativeEntry + '. Run npm install in backend/ first.');
+  }
+
+  const result = spawnSync(process.execPath, [entry, ...args], {
+    cwd: backendDir,
+    env,
+    stdio: 'inherit',
+  });
+
+  if (result.error) {
+    fail('Could not start ' + label + ': ' + result.error.message);
+  }
+  if (result.status !== 0) {
+    fail(label + ' exited with code ' + result.status + '. Nothing further was run.');
+  }
+}
+
+runLocalCli('prisma db push', 'node_modules/prisma/build/index.js', ['db', 'push', '--skip-generate']);
 
 if (process.argv.includes('--no-seed')) {
   console.log('\n  Schema pushed. Seeding skipped (--no-seed).\n');
@@ -82,11 +102,6 @@ if (process.argv.includes('--no-seed')) {
 
 console.log('\n  Seeding (this deletes existing rows first)...\n');
 
-const seed = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['tsx', 'prisma/seed.ts'],
-  { cwd: backendDir, env, stdio: 'inherit' }
-);
-if (seed.status !== 0) fail('Seeding failed.');
+runLocalCli('seed', 'node_modules/tsx/dist/cli.mjs', ['prisma/seed.ts']);
 
 console.log('\n  Done. Log in with s.jenkins@lexpatent-ip.com / password123\n');
