@@ -21,7 +21,8 @@
     "render:build": "npm run build",
     "start:prod": "prisma db push --skip-generate && node dist/index.js",
     "db:seed:remote": "tsx prisma/seed.ts",
-    "db:remote": "node scripts/remote-db.mjs"
+    "db:remote": "node scripts/remote-db.mjs",
+    "channels:test": "node scripts/test-channels.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

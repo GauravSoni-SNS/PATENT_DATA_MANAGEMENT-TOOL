@@ -360,3 +360,31 @@ schema without deleting rows.
 Run it from `backend/`, never the repo root: the Prisma schema lives there, and
 from the root `npx` downloads an unrelated Prisma version because it cannot find
 one.
+
+### Getting the channel credentials right
+
+`npm run channels:test` checks the configuration without running the API. It
+reads the same variables the server does, masks the secrets, verifies the SMTP
+connection, and can send one real message per channel:
+
+```powershell
+cd backend
+npm run channels:test                                        # report config only
+npm run channels:test -- --email you@firm.com                # send a test email
+npm run channels:test -- --phone "+919000000104"             # send a test WhatsApp
+```
+
+When the WhatsApp gateway rejects a request it prints the exact URL, headers and
+body that were sent, so the payload can be lined up against the provider's
+documentation. Every part of that payload is an environment variable, so
+matching a different gateway shape never needs a code change:
+
+| If the provider expects | Set |
+|---|---|
+| `{"phone": ..., "text": ...}` | `WHATSAPP_TO_FIELD=phone`, `WHATSAPP_MESSAGE_FIELD=text` |
+| a raw key with no `Bearer` | `WHATSAPP_AUTH_SCHEME=` (empty) |
+| a custom header, e.g. `X-API-KEY` | `WHATSAPP_AUTH_HEADER=X-API-KEY` |
+| an instance or channel id | `WHATSAPP_SENDER=<id>`, `WHATSAPP_SENDER_FIELD=<field>` |
+
+Configure locally in `backend/.env` first, confirm with the script, then copy
+the same values into Render's Environment tab.
