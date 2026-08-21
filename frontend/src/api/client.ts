@@ -77,6 +77,9 @@ export const notificationsApi = {
   list: () => api.get('/notifications'),
   radar: () => api.get('/notifications/radar'),
   scan: () => api.post('/notifications/scan'),
+  channels: () => api.get('/notifications/channels'),
+  test: (payload: { email?: string; phone?: string }) => api.post('/notifications/test', payload),
+  resend: (id: string) => api.post(`/notifications/${id}/resend`),
 };
 
 export const receiptsApi = {

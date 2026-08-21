@@ -34,3 +34,20 @@ services:
         value: ./uploads
       - key: SIMULATED_DATE
         value: "2026-08-18"
+      # Email alerts. Without these the API records alerts as undelivered
+      # rather than pretending they were sent.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      # WhatsApp alerts through Visity.
+      - key: WHATSAPP_API_URL
+        sync: false
+      - key: WHATSAPP_API_KEY
+        sync: false

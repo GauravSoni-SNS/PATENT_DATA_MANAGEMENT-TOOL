@@ -2,11 +2,63 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../api/client';
 import { Icon } from '../components/Icon';
 
+interface Delivery {
+  channel: 'email' | 'whatsapp';
+  target: string;
+  status: 'SENT' | 'FAILED' | 'SKIPPED';
+  detail?: string;
+}
+
+/** Per-channel counts, so "DELIVERED" is backed by something visible. */
+function DeliverySummary({ deliveries }: { deliveries?: Delivery[] }) {
+  if (!deliveries?.length) {
+    return (
+      <span className="u-chip u-COMPLETED">
+        <Icon name="schedule" size={13} />
+        Not dispatched
+      </span>
+    );
+  }
+  const count = (channel: Delivery['channel'], status: Delivery['status']) =>
+    deliveries.filter((d) => d.channel === channel && d.status === status).length;
+
+  const chips: Array<{ key: string; icon: string; label: string; tone: string }> = [];
+  for (const channel of ['email', 'whatsapp'] as const) {
+    const icon = channel === 'email' ? 'mail' : 'chat';
+    const sent = count(channel, 'SENT');
+    const failed = count(channel, 'FAILED');
+    const skipped = count(channel, 'SKIPPED');
+    if (sent) chips.push({ key: channel + 's', icon, label: sent + ' sent', tone: 'u-SAFE_UPCOMING' });
+    if (failed) chips.push({ key: channel + 'f', icon, label: failed + ' failed', tone: 'u-OVERDUE' });
+    if (skipped) chips.push({ key: channel + 'k', icon, label: skipped + ' not configured', tone: 'u-COMPLETED' });
+  }
+  return (
+    <>
+      {chips.map((c) => (
+        <span key={c.key} className={'u-chip ' + c.tone}>
+          <Icon name={c.icon} size={13} />
+          {c.label}
+        </span>
+      ))}
+    </>
+  );
+}
+
 export default function AutomationsPage() {
   const qc = useQueryClient();
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsApi.list().then((r) => r.data.data),
+  });
+
+  const { data: channels } = useQuery({
+    queryKey: ['notification-channels'],
+    queryFn: () => notificationsApi.channels().then((r) => r.data.data),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (id: string) => notificationsApi.resend(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
   const scanMutation = useMutation({
@@ -45,11 +97,28 @@ export default function AutomationsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`u-chip ${channels?.email?.configured ? 'u-SAFE_UPCOMING' : 'u-T_15_URGENT'}`}>
+          <Icon name="mail" size={14} />
+          Email {channels?.email?.configured ? (channels.email.reachable ? 'connected' : 'configured, unreachable') : 'not configured'}
+        </span>
+        <span className={`u-chip ${channels?.whatsapp?.configured ? 'u-SAFE_UPCOMING' : 'u-T_15_URGENT'}`}>
+          <Icon name="chat" size={14} />
+          WhatsApp {channels?.whatsapp?.configured ? 'connected' : 'not configured'}
+        </span>
+        {(!channels?.email?.configured || !channels?.whatsapp?.configured) && (
+          <span className="text-[11px] text-ink-muted">
+            Alerts are recorded but not delivered until the missing channel is configured.
+          </span>
+        )}
+      </div>
+
       {scanMutation.isSuccess && (
         <div role="alert" className="alert alert-success border border-rule tc-card !py-3 text-ink">
           <Icon name="check_circle" size={18} filled />
           <span className="font-semibold">
-            Cron completed: {(scanMutation.data?.data?.data?.notificationsGenerated ?? 0)} alerts generated
+            Cron completed: {(scanMutation.data?.data?.data?.notificationsGenerated ?? 0)} alerts generated,{' '}
+            {(scanMutation.data?.data?.data?.delivered ?? 0)} delivered
           </span>
         </div>
       )}
@@ -58,6 +127,7 @@ export default function AutomationsPage() {
         {notifications.map((n: {
           id: string; tierLabel: string; subject: string; status: string;
           daysRemaining?: number; sentAt?: string; isEmergency: boolean;
+          deliveries?: Delivery[];
           matter?: { matterNumber: string; title: string };
         }) => (
           <div
@@ -77,9 +147,23 @@ export default function AutomationsPage() {
                   {n.matter.matterNumber} — {n.matter.title.substring(0, 60)}…
                 </div>
               )}
-              <div className="flex flex-wrap gap-4 text-xs font-semibold opacity-60 mt-2">
-                {n.daysRemaining != null && <span>{n.daysRemaining}d remaining</span>}
-                {n.sentAt && <span>Sent {new Date(n.sentAt).toLocaleString()}</span>}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <DeliverySummary deliveries={n.deliveries} />
+                {n.daysRemaining != null && (
+                  <span className="text-xs font-semibold text-ink-muted">{n.daysRemaining}d remaining</span>
+                )}
+                {n.sentAt && (
+                  <span className="text-xs text-ink-muted">Sent {new Date(n.sentAt).toLocaleString()}</span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-xs tc-btn-quiet tc-btn gap-1 ml-auto"
+                  onClick={() => resendMutation.mutate(n.id)}
+                  disabled={resendMutation.isPending}
+                >
+                  <Icon name="send" size={14} />
+                  Resend
+                </button>
               </div>
             </div>
           </div>

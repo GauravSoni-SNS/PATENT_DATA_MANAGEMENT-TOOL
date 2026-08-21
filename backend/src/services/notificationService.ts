@@ -4,6 +4,8 @@ import { getSimulatedDate, calculateDaysRemaining, getUrgencyTier } from './dead
 export interface NotificationRecipient {
   name: string;
   email: string;
+  /** Used for the WhatsApp channel; absent means email only. */
+  phone?: string | null;
   role: string;
 }
 
@@ -81,9 +83,9 @@ interface MatterForNotification {
   id: string;
   matterNumber: string;
   title: string;
-  client?: { contactPerson?: string | null; contactEmail?: string | null } | null;
-  leadAttorney?: { firstName: string; lastName: string; email: string } | null;
-  supervisingPartner?: { firstName: string; lastName: string; email: string } | null;
+  client?: { contactPerson?: string | null; contactEmail?: string | null; contactPhone?: string | null } | null;
+  leadAttorney?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
+  supervisingPartner?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
   deadlines: Array<{
     id: string;
     title: string;
@@ -106,16 +108,17 @@ export function evaluateMatterNotifications(matter: MatterForNotification): Gene
     const recipients: NotificationRecipient[] = [];
 
     if (attorney) {
-      recipients.push({ name: `${attorney.firstName} ${attorney.lastName}`, email: attorney.email, role: 'Lead Attorney' });
+      recipients.push({ name: `${attorney.firstName} ${attorney.lastName}`, email: attorney.email, phone: attorney.phone, role: 'Lead Attorney' });
     }
     if (partner && tierInfo.tier !== 'T_30_ADVISORY') {
-      recipients.push({ name: `${partner.firstName} ${partner.lastName}`, email: partner.email, role: 'Supervising Partner' });
+      recipients.push({ name: `${partner.firstName} ${partner.lastName}`, email: partner.email, phone: partner.phone, role: 'Supervising Partner' });
     }
     if (tierInfo.tier === 'T_5_CRITICAL' || tierInfo.tier === 'DAILY_COUNTDOWN') {
       if (matter.client?.contactEmail) {
         recipients.push({
           name: matter.client.contactPerson || 'Client Legal Contact',
           email: matter.client.contactEmail,
+          phone: matter.client.contactPhone,
           role: 'Client Legal Contact',
         });
       }
