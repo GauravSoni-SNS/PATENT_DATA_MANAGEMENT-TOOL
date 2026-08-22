@@ -12,6 +12,7 @@ import verificationsRoutes, { deadlinesRouter } from './routes/verifications';
 import notificationsRoutes from './routes/notifications';
 import dashboardRoutes from './routes/dashboard';
 import clientsRoutes from './routes/clients';
+import teamsRoutes from './routes/teams';
 
 export function createApp() {
   const app = express();
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api/v1/notifications', notificationsRoutes);
   app.use('/api/v1/dashboard', dashboardRoutes);
   app.use('/api/v1/clients', clientsRoutes);
+  app.use('/api/v1/teams', teamsRoutes);
 
   app.use(errorHandler);
   return app;

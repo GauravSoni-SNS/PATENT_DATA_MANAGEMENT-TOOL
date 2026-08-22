@@ -43,6 +43,7 @@ export async function runScanForFirm(firmId: string): Promise<ScanSummary> {
   const matters = await prisma.matter.findMany({
     where: { firmId, deletedAt: null, status: 'ACTIVE' },
     include: {
+      team: { include: { members: { include: { user: true } } } },
       createdBy: true,
       leadAttorney: true,
       deadlines: true,
