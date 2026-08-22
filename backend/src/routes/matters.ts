@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { can } from '../services/permissions';
 import { authenticate } from '../middleware/auth';
 import { enrichDeadlines, computeDeadlineFields, setSimulatedDate, getSimulatedDate } from '../services/deadlineService';
 import { generateDeadlinesForStage, getTriggerEventForStage } from '../services/rulesEngine';
@@ -149,10 +150,33 @@ router.get('/:id', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const firmId = req.user!.firmId;
+    // Adding a matter is what starts the alerts for a team, so it is gated on
+    // the designation rather than on being signed in.
+    if (!can(req.user!.role, 'ADD_MATTER')) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Your role cannot add matters', status: 403 } });
+    }
+
     const {
       matterNumber, title, jurisdiction, currentStage, priorityDate, filingDate,
       officialAppNumber, clientId, leadAttorneyId, supervisingPartnerId, abstract, applicationType,
+      teamId,
     } = req.body;
+
+    // A matter with no team has nobody to alert, so the team must be one the
+    // caller actually belongs to (an admin may file for any team).
+    if (teamId) {
+      const membership = await prisma.team.findFirst({
+        where: {
+          id: teamId,
+          firmId: req.user!.firmId,
+          ...(req.user!.role === 'ADMIN' ? {} : { members: { some: { userId: req.user!.id } } }),
+        },
+      });
+      if (!membership) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Unknown team, or you are not a member of it', status: 422 } });
+      }
+    }
+
 
     const existing = await prisma.matter.findUnique({ where: { firmId_matterNumber: { firmId, matterNumber } } });
     if (existing) {
@@ -176,6 +200,9 @@ router.post('/', authenticate, async (req, res, next) => {
         // The uploader owns the matter; alerts are sent to them.
 
         createdById: req.user!.id,
+
+
+        teamId: teamId || null,
 
         leadAttorneyId: leadAttorneyId || req.user!.id,
         supervisingPartnerId,

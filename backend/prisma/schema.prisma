@@ -109,6 +109,7 @@ model Firm {
   auditLogs     AuditLog[]
 
   alertSetting AlertSetting?
+  teams        Team[]
   @@map("firms")
 }
 
@@ -135,6 +136,7 @@ model User {
   leadMatters          Matter[]      @relation("LeadAttorney")
   supervisingMatters   Matter[]      @relation("SupervisingPartner")
   createdMatters       Matter[]      @relation("MatterCreatedBy")
+  teamMemberships      TeamMember[]
   uploadedReceipts     Receipt[]     @relation("UploadedBy")
   verifications        Verification[] @relation("VerifiedBy")
   clearedDeadlines     Deadline[]    @relation("ClearedBy")
@@ -179,6 +181,7 @@ model Matter {
   leadAttorneyId       String?          @map("lead_attorney_id")
   supervisingPartnerId String?          @map("supervising_partner_id")
   createdById          String?          @map("created_by_id")
+  teamId               String?          @map("team_id")
   abstract             String?
   parentMatterId       String?          @map("parent_matter_id")
   metadata             Json             @default("{}")
@@ -191,6 +194,7 @@ model Matter {
   leadAttorney       User?    @relation("LeadAttorney", fields: [leadAttorneyId], references: [id])
   supervisingPartner User?    @relation("SupervisingPartner", fields: [supervisingPartnerId], references: [id])
   createdBy          User?    @relation("MatterCreatedBy", fields: [createdById], references: [id])
+  team               Team?    @relation(fields: [teamId], references: [id])
   deadlines          Deadline[]
   receipts           Receipt[]
   notifications      Notification[]
@@ -362,4 +366,43 @@ model AlertSetting {
   firm Firm @relation(fields: [firmId], references: [id])
 
   @@map("alert_settings")
+}
+
+/// A group inside the firm that handles one kind of work: patents, trade
+/// marks, designs. Matters belong to a team, and every member of that team is
+/// alerted about them.
+model Team {
+  id          String   @id @default(uuid())
+  firmId      String   @map("firm_id")
+  name        String
+  description String?
+  /// Optional hint for which work this team takes, shown when adding a matter.
+  practice    String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  firm    Firm         @relation(fields: [firmId], references: [id])
+  members TeamMember[]
+  matters Matter[]
+
+  @@unique([firmId, name])
+  @@index([firmId])
+  @@map("teams")
+}
+
+/// Membership is many-to-many: a person can sit on several teams, and a team
+/// has several people.
+model TeamMember {
+  id       String   @id @default(uuid())
+  teamId   String   @map("team_id")
+  userId   String   @map("user_id")
+  addedAt  DateTime @default(now()) @map("added_at")
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
 }

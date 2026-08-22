@@ -79,12 +79,24 @@ export function generateEmailHtml(params: {
   `;
 }
 
+interface AlertPerson {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  altPhone?: string | null;
+  altEmail?: string | null;
+  role?: string;
+}
+
 interface MatterForNotification {
   id: string;
   matterNumber: string;
   title: string;
-  createdBy?: { firstName: string; lastName: string; email: string; phone?: string | null; altPhone?: string | null; altEmail?: string | null } | null;
-  leadAttorney?: { firstName: string; lastName: string; email: string; phone?: string | null; altPhone?: string | null; altEmail?: string | null } | null;
+  /** Everyone on the team that handles this matter. */
+  team?: { name: string; members: Array<{ user: AlertPerson }> } | null;
+  createdBy?: AlertPerson | null;
+  leadAttorney?: AlertPerson | null;
   deadlines: Array<{
     id: string;
     title: string;
@@ -105,28 +117,41 @@ export function evaluateMatterNotifications(
     const tierInfo = getTierForDays(days, options?.schedule, options?.leadDays);
     if (!tierInfo) continue;
 
-    // One recipient: whoever uploaded the matter. Alerting a wider group was
-    // the reason alerts got ignored, and clients are never contacted by this
-    // tool at all.
-    const owner = matter.createdBy ?? matter.leadAttorney;
-    const recipients: NotificationRecipient[] = [];
-    if (owner) {
-      recipients.push({
-        name: `${owner.firstName} ${owner.lastName}`,
-        email: owner.email,
-        phone: owner.phone,
-        role: 'Matter owner',
-      });
+    // Everyone on the team that handles this matter is told, because the
+    // matter belongs to the team rather than to one person. If a matter has no
+    // team yet, the person who added it is the fallback so nothing goes
+    // unwatched.
+    const teamMembers = matter.team?.members?.map((m) => m.user) ?? [];
+    const people: AlertPerson[] = teamMembers.length
+      ? teamMembers
+      : [matter.createdBy ?? matter.leadAttorney].filter(Boolean) as AlertPerson[];
 
-      // The backup number and address on the profile cover the owner being
-      // unavailable. Only used when one is actually set.
-      if (owner.altEmail || owner.altPhone) {
+    const recipients: NotificationRecipient[] = [];
+    const seenAddresses = new Set<string>();
+
+    for (const person of people) {
+      const label = matter.team?.name ? `${matter.team.name} team` : 'Matter owner';
+      if (person.email && !seenAddresses.has(person.email.toLowerCase())) {
+        seenAddresses.add(person.email.toLowerCase());
         recipients.push({
-          name: `${owner.firstName} ${owner.lastName} (backup)`,
-          email: owner.altEmail || '',
-          phone: owner.altPhone,
-          role: 'Backup contact',
+          name: `${person.firstName} ${person.lastName}`,
+          email: person.email,
+          phone: person.phone,
+          role: label,
         });
+      }
+      // A backup number or address covers that person being unavailable.
+      if (person.altEmail || person.altPhone) {
+        const key = (person.altEmail || person.altPhone || '').toLowerCase();
+        if (!seenAddresses.has(key)) {
+          seenAddresses.add(key);
+          recipients.push({
+            name: `${person.firstName} ${person.lastName} (backup)`,
+            email: person.altEmail || '',
+            phone: person.altPhone,
+            role: `${label} backup`,
+          });
+        }
       }
     }
 
