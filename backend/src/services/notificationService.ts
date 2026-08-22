@@ -83,8 +83,8 @@ interface MatterForNotification {
   id: string;
   matterNumber: string;
   title: string;
-  createdBy?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
-  leadAttorney?: { firstName: string; lastName: string; email: string; phone?: string | null } | null;
+  createdBy?: { firstName: string; lastName: string; email: string; phone?: string | null; altPhone?: string | null; altEmail?: string | null } | null;
+  leadAttorney?: { firstName: string; lastName: string; email: string; phone?: string | null; altPhone?: string | null; altEmail?: string | null } | null;
   deadlines: Array<{
     id: string;
     title: string;
@@ -117,6 +117,17 @@ export function evaluateMatterNotifications(
         phone: owner.phone,
         role: 'Matter owner',
       });
+
+      // The backup number and address on the profile cover the owner being
+      // unavailable. Only used when one is actually set.
+      if (owner.altEmail || owner.altPhone) {
+        recipients.push({
+          name: `${owner.firstName} ${owner.lastName} (backup)`,
+          email: owner.altEmail || '',
+          phone: owner.altPhone,
+          role: 'Backup contact',
+        });
+      }
     }
 
     const subject = generateEmailSubject(tierInfo.tier, days, matter.matterNumber, deadline.title);

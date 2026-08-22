@@ -85,7 +85,7 @@ router.get('/recipients', authenticate, async (req, res, next) => {
     const [users, clients] = await Promise.all([
       prisma.user.findMany({
         where: { firmId, isActive: true },
-        select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true, altPhone: true, altEmail: true, role: true },
         orderBy: { firstName: 'asc' },
       }),
       prisma.client.findMany({
@@ -125,17 +125,38 @@ router.patch('/users/:id', authenticate, async (req, res, next) => {
     }
 
     const phone = normalisePhoneInput(req.body?.phone);
-    if (phone === undefined) {
+    if (req.body?.phone !== undefined && phone === undefined) {
       return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Enter 8 to 15 digits, or leave blank to clear', status: 422 } });
     }
 
     const existing = await prisma.user.findFirst({ where: { id, firmId: caller.firmId } });
     if (!existing) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found', status: 404 } });
 
+    const altPhone = normalisePhoneInput(req.body?.altPhone);
+    if (req.body?.altPhone !== undefined && altPhone === undefined) {
+      return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Backup number must be 8 to 15 digits, or blank to clear', status: 422 } });
+    }
+
+    let altEmail: string | null | undefined;
+    if (req.body?.altEmail !== undefined) {
+      const trimmed = String(req.body.altEmail).trim();
+      if (!trimmed) {
+        altEmail = null;
+      } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Backup email is not a valid address', status: 422 } });
+      } else {
+        altEmail = trimmed;
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id },
-      data: { phone },
-      select: { id: true, firstName: true, lastName: true, email: true, phone: true, role: true },
+      data: {
+        ...(req.body?.phone !== undefined ? { phone } : {}),
+        ...(req.body?.altPhone !== undefined ? { altPhone } : {}),
+        ...(altEmail !== undefined ? { altEmail } : {}),
+      },
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, altPhone: true, altEmail: true, role: true },
     });
     res.json({ success: true, data: updated });
   } catch (e) {

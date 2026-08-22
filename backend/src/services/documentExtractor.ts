@@ -28,6 +28,10 @@ export interface ExtractionResult {
   currency?: string;
   triggerDate?: string;
   priorityDate?: string;
+  hearingTime?: string;
+  hearingMode?: string;
+  classes?: string;
+  applicationDate?: string;
   /** 0-1, from how strongly the document matched and how much was found. */
   confidence: number;
   /** Fields the profile looks for but could not find, for review prompts. */
@@ -115,7 +119,12 @@ function applyRule(text: string, rule: FieldRule, order: DateOrder): ExtractedFi
 
     // Trim separator noise from line-wrapped forms, but never a full stop:
     // company suffixes end in one ("Innovations Ltd.").
-    return { value: captured.replace(new RegExp(String.raw`[\s,;:-]+$`), ""), matchedOn: pattern.source };
+    // Forms wrap mid-value, so a captured time can arrive with a newline
+    // inside it ("10:00 AM TO" / "01:30 PM"). Collapse runs of whitespace.
+    const cleaned = captured
+      .replace(/\s+/g, ' ')
+      .replace(/[\s,;:-]+$/, '');
+    return { value: cleaned, matchedOn: pattern.source };
   }
   return undefined;
 }
@@ -127,10 +136,15 @@ function detectStage(text: string): string | undefined {
   return undefined;
 }
 
+/**
+ * A bare currency symbol is not evidence: PDFs of Devanagari forms carry
+ * stray $ and similar from mangled glyphs. Only a symbol next to an amount,
+ * or an explicit currency code, counts.
+ */
 function detectCurrency(text: string, fallback?: string): string | undefined {
-  if (/\bINR\b|₹|\bRs\.?\b/i.test(text)) return 'INR';
-  if (/\bUSD\b|\$/.test(text)) return 'USD';
-  if (/\bEUR\b|€/.test(text)) return 'EUR';
+  if (/\bINR\b|₹\s*\d|\bRs\.?\s*\d/i.test(text)) return 'INR';
+  if (/\bUSD\b|\$\s*\d/.test(text)) return 'USD';
+  if (/\bEUR\b|€\s*\d/.test(text)) return 'EUR';
   return fallback;
 }
 
