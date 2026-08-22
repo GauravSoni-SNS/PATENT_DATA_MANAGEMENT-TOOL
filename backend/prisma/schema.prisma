@@ -123,6 +123,9 @@ model User {
   specialization String?
   avatarUrl      String?  @map("avatar_url")
   phone         String?  @map("phone")
+  /// Backup number and address for reminders when the owner is unavailable.
+  altPhone      String?  @map("alt_phone")
+  altEmail      String?  @map("alt_email")
   isActive       Boolean  @default(true) @map("is_active")
   lastLoginAt    DateTime? @map("last_login_at")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -205,6 +208,8 @@ model Deadline {
   title              String
   description        String?
   statutoryDueDate   DateTime       @map("statutory_due_date") @db.Date
+  /// Local time of the hearing, as printed on the notice.
+  dueTime            String?        @map("due_time")
   extendedDueDate    DateTime?      @map("extended_due_date") @db.Date
   isStatutoryBar     Boolean        @default(false) @map("is_statutory_bar")
   isExtendable       Boolean        @default(false) @map("is_extendable")

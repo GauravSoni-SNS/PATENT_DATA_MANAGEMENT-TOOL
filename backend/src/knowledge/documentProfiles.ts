@@ -18,7 +18,11 @@ export type FieldName =
   | 'officialFees'
   | 'currency'
   | 'triggerDate'
-  | 'priorityDate';
+  | 'priorityDate'
+  | 'hearingTime'
+  | 'hearingMode'
+  | 'classes'
+  | 'applicationDate';
 
 export type DateOrder = 'DMY' | 'MDY' | 'YMD';
 
@@ -61,6 +65,72 @@ export const COMMON_FIELDS: FieldRule[] = [
 ];
 
 export const DOCUMENT_PROFILES: DocumentProfile[] = [
+  {
+    id: 'IN_TM_HEARING',
+    label: 'India (Trade Marks Registry) — hearing notice',
+    jurisdiction: 'IN',
+    stage: 'HEARING',
+    signals: [
+      /trade\s*marks?\s*registry/i,
+      /trade\s*marks?\s*rules/i,
+      /hearing\s*officer/i,
+      /registrar\s+of\s+trade\s*marks/i,
+      /fixed\s+for\s+hearing/i,
+    ],
+    dateOrder: 'DMY',
+    fields: [
+      {
+        field: 'officialAppNumber',
+        patterns: [
+          /application\s*(?:no\.?|number)\s*[:\-]?\s*(\d{5,})/i,
+          /trade\s*mark\s*application\s*number\s*[:\-]?\s*(\d{5,})/i,
+        ],
+      },
+      {
+        field: 'clientName',
+        patterns: [
+          /name\s*of\s*applicant\s*[:\-]?\s*([^\n\r]{2,120})/i,
+          /applicant\s*[:\-]\s*([^\n\r]{2,120})/i,
+        ],
+      },
+      {
+        field: 'classes',
+        patterns: [/in\s*class(?:\s*\/\s*classes)?\s*[:\-]\s*([\d,\s]{1,20})/i],
+      },
+      {
+        field: 'applicationDate',
+        patterns: [/application\s*date\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})/i],
+        kind: 'date',
+      },
+      {
+        // The date that matters on this notice is the hearing, not the letter
+        // date at the top, so it is matched from the hearing sentence itself.
+        field: 'triggerDate',
+        patterns: [
+          /fixed\s+for\s+hearing\s+on\s+(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})/i,
+          /hearing\s+on\s+(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})/i,
+          /सुनवाई[^\d]{0,40}(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4})/,
+        ],
+        kind: 'date',
+      },
+      {
+        field: 'hearingTime',
+        patterns: [
+          /hearing\s+on\s+\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s+at\s+([\d:]{1,5}\s*(?:AM|PM)(?:\s*TO\s*[\d:]{1,5}\s*(?:AM|PM))?)/i,
+          /at\s+([\d:]{1,5}\s*(?:AM|PM)\s*TO\s*[\d:]{1,5}\s*(?:AM|PM))/i,
+          /([\d:]{1,5}\s*(?:AM|PM)\s*TO\s*[\d:]{1,5}\s*(?:AM|PM))/i,
+        ],
+      },
+      {
+        field: 'hearingMode',
+        patterns: [/(video\s*conferenc\w*)/i, /(in\s*person\s*hearing)/i],
+      },
+      {
+        field: 'title',
+        patterns: [/trade\s*mark\s*[:\-]\s*([^\n\r]{2,120})/i],
+      },
+    ],
+  },
   {
     id: 'IN_IPO_CBR',
     label: 'India (IPO) — Controller Batch Receipt / e-filing acknowledgement',
@@ -209,7 +279,7 @@ export const DOCUMENT_PROFILES: DocumentProfile[] = [
  */
 export const STAGE_SIGNALS: Array<{ stage: string; patterns: RegExp[] }> = [
   { stage: 'EXAMINATION_FER', patterns: [/first\s+examination\s+report/i, /\bFER\b/i, /office\s+action/i, /non-?final\s+rejection/i] },
-  { stage: 'HEARING', patterns: [/hearing\s+notice/i, /notice\s+of\s+hearing/i, /oral\s+proceedings/i, /\bhearing\s+(?:is\s+)?(?:scheduled|fixed)/i] },
+  { stage: 'HEARING', patterns: [/fixed\s+for\s+hearing/i, /hearing\s+notice/i, /notice\s+of\s+hearing/i, /oral\s+proceedings/i, /\bhearing\s+(?:is\s+)?(?:scheduled|fixed)/i] },
   { stage: 'ALLOWANCE_GRANT', patterns: [/notice\s+of\s+allowance/i, /intention\s+to\s+grant/i, /grant\s+(?:fee|certificate)/i] },
   { stage: 'ANNUITY_MAINTENANCE', patterns: [/renewal\s+fee/i, /annuity/i, /maintenance\s+fee/i, /form\s*27/i] },
   { stage: 'PUBLICATION_RFE', patterns: [/request\s+for\s+examination/i, /form\s*18/i, /publication\s+under\s+section\s+11a/i] },

@@ -105,6 +105,7 @@ export const dashboardApi = {
   users: () => api.get('/dashboard/users'),
   recipients: () => api.get('/dashboard/recipients'),
   setUserPhone: (id: string, phone: string) => api.patch(`/dashboard/users/${id}`, { phone }),
+  setUserBackup: (id: string, patch: { altPhone?: string; altEmail?: string }) => api.patch(`/dashboard/users/${id}`, patch),
   setClientPhone: (id: string, contactPhone: string) => api.patch(`/dashboard/clients/${id}`, { contactPhone }),
 };
 

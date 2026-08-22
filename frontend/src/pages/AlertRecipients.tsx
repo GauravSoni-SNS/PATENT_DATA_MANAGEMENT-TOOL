@@ -10,6 +10,8 @@ interface Person {
   sublabel: string;
   email?: string | null;
   phone?: string | null;
+  altPhone?: string | null;
+  altEmail?: string | null;
   kind: 'user' | 'client';
 }
 
@@ -26,11 +28,12 @@ function PhoneRow({
 }: {
   person: Person;
   reachable: boolean | null;
-  onSave: (phone: string) => void;
+  onSave: (phone: string, altPhone: string) => void;
   saving: boolean;
 }) {
   const [value, setValue] = useState(person.phone || '');
-  const dirty = digits(value) !== digits(person.phone);
+  const [backup, setBackup] = useState(person.altPhone || '');
+  const dirty = digits(value) !== digits(person.phone) || digits(backup) !== digits(person.altPhone);
 
   return (
     <tr className="border-b border-rule">
@@ -47,6 +50,15 @@ function PhoneRow({
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
+        {person.kind === 'user' && (
+          <input
+            type="tel"
+            className="input input-sm tc-input w-full max-w-[190px] font-mono text-xs mt-1"
+            placeholder="backup number (optional)"
+            value={backup}
+            onChange={(e) => setBackup(e.target.value)}
+          />
+        )}
       </td>
       <td className="hidden sm:table-cell">
         {!digits(value) ? (
@@ -70,7 +82,7 @@ function PhoneRow({
           type="button"
           className="btn btn-xs tc-btn-primary tc-btn"
           disabled={!dirty || saving}
-          onClick={() => onSave(value)}
+          onClick={() => onSave(value, backup)}
         >
           Save
         </button>
@@ -105,7 +117,8 @@ export function AlertRecipients() {
   };
 
   const saveUser = useMutation({
-    mutationFn: ({ id, phone }: { id: string; phone: string }) => dashboardApi.setUserPhone(id, phone),
+    mutationFn: ({ id, phone, altPhone }: { id: string; phone: string; altPhone: string }) =>
+      dashboardApi.setUserBackup(id, { altPhone }).then(() => dashboardApi.setUserPhone(id, phone)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipients'] });
       qc.invalidateQueries({ queryKey: ['notification-channels'] });
@@ -141,12 +154,14 @@ export function AlertRecipients() {
   );
   const whatsappKnown = channels?.whatsapp?.reachable === true;
 
-  const users: Person[] = (data?.users || []).map((u: { id: string; firstName: string; lastName: string; email: string; phone?: string; role: string }) => ({
+  const users: Person[] = (data?.users || []).map((u: { id: string; firstName: string; lastName: string; email: string; phone?: string; altPhone?: string; altEmail?: string; role: string }) => ({
     id: u.id,
     label: `${u.firstName} ${u.lastName}`,
     sublabel: u.role.toLowerCase(),
     email: u.email,
     phone: u.phone,
+    altPhone: u.altPhone,
+    altEmail: u.altEmail,
     kind: 'user' as const,
   }));
 
@@ -159,7 +174,7 @@ export function AlertRecipients() {
     kind: 'client' as const,
   }));
 
-  const table = (title: string, people: Person[], onSave: (p: Person, phone: string) => void, saving: boolean) => (
+  const table = (title: string, people: Person[], onSave: (p: Person, phone: string, altPhone: string) => void, saving: boolean) => (
     <div className="tc-card overflow-hidden p-0">
       <div className="px-4 py-3 border-b border-rule flex items-center gap-2">
         <Icon name={title === 'Team' ? 'groups' : 'business'} size={18} className="text-sage" filled />
@@ -184,7 +199,7 @@ export function AlertRecipients() {
                 person={p}
                 reachable={!whatsappKnown ? null : digits(p.phone) ? reachableSet.has(digits(p.phone)) : null}
                 saving={saving}
-                onSave={(phone) => onSave(p, phone)}
+                onSave={(phone, altPhone) => onSave(p, phone, altPhone)}
               />
             ))}
           </tbody>
@@ -212,7 +227,7 @@ export function AlertRecipients() {
       <AlertSchedule />
 
 
-      {table('Team', users, (p, phone) => saveUser.mutate({ id: p.id, phone }), saveUser.isPending)}
+      {table('Team', users, (p, phone, altPhone) => saveUser.mutate({ id: p.id, phone, altPhone }), saveUser.isPending)}
       {table('Client contacts', clients, (p, phone) => saveClient.mutate({ id: p.id, phone }), saveClient.isPending)}
     </div>
   );
